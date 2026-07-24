@@ -17,11 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
         exit;
     }
 
-    session_start();
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
     $_SESSION['user_id'] = $userData['user_id'];
     $_SESSION['email'] = $userData['email'];
     $_SESSION['username'] = $userData['full_name'];
     $_SESSION['role'] = $userData['role']; // Default role to 'user' if not set
+    $_SESSION['phone_number'] = $userData['phone_number'];
 
     // Login by email to match the existing input field.
     $query = "SELECT * FROM users WHERE email = :email";
@@ -32,7 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 
     try {
         if ($userData && password_verify($password, $userData['password_hash'])) {
-            session_start();
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
             $_SESSION['user_id'] = $userData['user_id'];
             $_SESSION['email'] = $userData['email'];
             if (isset($_SESSION['role'])) {
@@ -42,8 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                     header("Location: ../../view/dashboard.php");
                 } elseif ($_SESSION['role'] === 'Admin') {
                     header("Location: ../../view/Admin/dashboard.php");
-                } else {
+                } elseif ($_SESSION['role'] === 'Tenant') {
                     header("Location: ../../view/Tenant/dashboard.php");
+                } else {
+                    header("Location: ../../view/Prospect/dashboard.php");
                 }
                 exit;
             }
@@ -65,14 +72,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 
 // REGISTER
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
-    $fullName = $_POST['username'] ?? '';
+    $fullName = $_POST['full_name'] ?? '';
     $email = $_POST['email'] ?? '';
     $password = $_POST['password'] ?? '';
+    $phoneNumber = $_POST['phone_number'] ?? '';
 
     // Registration includes email; login does not.
     if (!empty($email)) {
         if (empty($fullName) || empty($password)) {
-            echo "All fields are required.";
+            echo "All fields are required....";
             exit;
         }
 
@@ -91,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
         $user->full_name = $fullName;
         $user->email = $email;
         $user->password = $password;
+        $user->phone_number = $phoneNumber;
 
         if ($user->create()) {
             header("Location: ../../view/auth/login.php");

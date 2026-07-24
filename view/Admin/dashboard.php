@@ -2,7 +2,7 @@
 require_once '../layout/header.php';
 ?>
 
-Hello Tenant <?=$_SESSION['username']?>
+Hello Admin <?=$_SESSION['username']?>
 
 <?php
 require_once '../layout/footer.php';

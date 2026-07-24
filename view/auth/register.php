@@ -12,8 +12,8 @@
     <div class="container mt-5">
         <h2>Register</h2>
         <div class="form-group">
-            <label for="username">Username:</label>
-            <input type="text" class="form-control" id="username" name="username" required>
+            <label for="full_name">Full Name:</label>
+            <input type="text" class="form-control" id="full_name" name="full_name" required>
         </div>
         <div class="form-group">
             <label for="email">Email:</label>
@@ -22,6 +22,10 @@
         <div class="form-group">
             <label for="password">Password:</label>
             <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+        <div>
+            <label for="phone_number">Phone Number:</label>
+            <input type="text" class="form-control" id="phone_number" name="phone_number" required>
         </div>
         <input type="hidden" name="register" value="register">
         <button type="submit" class="btn btn-primary">Register</button>

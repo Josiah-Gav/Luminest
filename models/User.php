@@ -8,13 +8,14 @@ class User{
     public $full_name;
     public $email;
     public $password;
+    public $phone_number;
 
     public function __construct($db){
         $this->conn = $db;
     }
 
     public function create(){
-        $query = "INSERT INTO " . $this->table . " (full_name, email, password_hash) VALUES (:full_name, :email, :password_hash)";
+        $query = "INSERT INTO " . $this->table . " (full_name, email, password_hash, phone_number) VALUES (:full_name, :email, :password_hash, :phone_number)";
         $stmt = $this->conn->prepare($query);
 
         // Sanitize input
@@ -26,6 +27,7 @@ class User{
         $stmt->bindParam(':full_name', $this->full_name);
         $stmt->bindParam(':email', $this->email);
         $stmt->bindParam(':password_hash', password_hash($this->password, PASSWORD_DEFAULT));
+        $stmt->bindParam(':phone_number', $this->phone_number);
 
         if($stmt->execute()){
             return true;
