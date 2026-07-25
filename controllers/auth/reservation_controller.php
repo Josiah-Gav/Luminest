@@ -23,6 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 	exit;
 }
 
+// CANCEL RESERVATION
+
 if (isset($_POST['cancel_reservation'])) {
 	$reservationId = isset($_POST['reservation_id']) ? (int)$_POST['reservation_id'] : 0;
 
@@ -101,6 +103,8 @@ if (isset($_POST['cancel_reservation'])) {
 		exit;
 	}
 }
+
+//HOUSE RESERVATION
 
 if (!isset($_POST['reserve_house'])) {
 	header('Location: ../../view/Prospect/reservation.php?error=invalid_request');
