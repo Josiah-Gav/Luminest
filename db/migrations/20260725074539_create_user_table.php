@@ -18,7 +18,8 @@ class CreateUserTable extends AbstractMigration
               ->addColumn('phone_number', 'string', ['limit' => 20, 'null' => true])
               ->addColumn('role', 'enum', [
                   'values' => ['Admin', 'Prospect', 'Property_Manager', 'Tenant', 'Maintenance_Staff'],
-                  'null' => false
+                  'null' => false,
+                  'default' => 'Prospect'
               ])
               ->addIndex(['email'], ['unique' => true])
               ->addTimestamps() // Automatically adds created_at and updated_at with MySQL defaults
