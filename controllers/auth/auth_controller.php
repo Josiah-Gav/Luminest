@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     $email = $_POST['email'];
     $password = $_POST['password'];
     unset($_POST['login']); // Remove the 'login' key from $_POST to avoid confusion
-    $userData = $user->readByEmail($_POST['email']);
+    $userData = $user->getLoginUserByEmail($email);
     if (empty($email) || empty($password)) {
         echo "Email and password are required.";
         exit;
@@ -25,13 +25,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     $_SESSION['username'] = $userData['full_name'];
     $_SESSION['role'] = $userData['role']; // Default role to 'user' if not set
     $_SESSION['phone_number'] = $userData['phone_number'];
-
-    // Login by email to match the existing input field.
-    $query = "SELECT * FROM users WHERE email = :email";
-    $stmt = $db->getConnection()->prepare($query);
-    $stmt->bindParam(':email', $email);
-    $stmt->execute();
-    $userData = $stmt->fetch();
 
     try {
         if ($userData && password_verify($password, $userData['password_hash'])) {
@@ -85,12 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
         }
 
         // Check if user already exists by email.
-        $query = "SELECT user_id FROM users WHERE email = :email";
-        $stmt = $db->getConnection()->prepare($query);
-        $stmt->bindParam(':email', $email);
-        $stmt->execute();
-
-        if ($stmt->rowCount() > 0) {
+        if ($user->emailExists($email)) {
             echo "Email already exists.";
             exit;
         }

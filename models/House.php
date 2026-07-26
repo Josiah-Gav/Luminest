@@ -138,7 +138,10 @@ class House
         }
 
         $stmt = $this->conn->prepare(
-            'SELECT * FROM house WHERE house_type = :house_type AND block = :block AND lot = :lot LIMIT 1'
+            'SELECT house_id, house_type, lot, block, status, date_of_purchase, owner_id, created_at, updated_at
+             FROM house
+             WHERE house_type = :house_type AND block = :block AND lot = :lot
+             LIMIT 1'
         );
         $stmt->execute([
             ':house_type' => $dbType,
@@ -149,5 +152,52 @@ class House
         $house = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $house ?: null;
+    }
+
+    public function markAsReserved(int $houseId): bool
+    {
+        if (!$this->conn || $houseId <= 0) {
+            return false;
+        }
+
+        $stmt = $this->conn->prepare(
+            'UPDATE house
+             SET status = :status, owner_id = NULL, date_of_purchase = NULL, updated_at = NOW()
+             WHERE house_id = :house_id AND status = :expected_status'
+        );
+
+        $stmt->execute([
+            ':status' => 'reserved',
+            ':house_id' => $houseId,
+            ':expected_status' => 'available',
+        ]);
+
+        return $stmt->rowCount() === 1;
+    }
+
+    public function markAsAvailableByUnit(string $houseType, int $block, int $lot): bool
+    {
+        if (!$this->conn || $houseType === '' || $block <= 0 || $lot <= 0) {
+            return false;
+        }
+
+        $stmt = $this->conn->prepare(
+            'UPDATE house
+             SET status = :available_status, owner_id = NULL, date_of_purchase = NULL, updated_at = NOW()
+             WHERE house_type = :house_type
+               AND block = :block
+               AND lot = :lot
+               AND status = :reserved_status'
+        );
+
+        $stmt->execute([
+            ':available_status' => 'available',
+            ':house_type' => $houseType,
+            ':block' => $block,
+            ':lot' => $lot,
+            ':reserved_status' => 'reserved',
+        ]);
+
+        return $stmt->rowCount() === 1;
     }
 }

@@ -69,25 +69,7 @@ if (isset($_POST['cancel_reservation'])) {
 			throw new RuntimeException('Reservation status update failed.');
 		}
 
-		$reopenStmt = $conn->prepare(
-			'UPDATE house
-			 SET status = :available_status, owner_id = NULL, updated_at = NOW()
-			 WHERE house_type = :house_type
-			   AND block = :block
-			   AND lot = :lot
-			   AND status = :reserved_status
-			   AND owner_id = :owner_id'
-		);
-		$reopenStmt->execute([
-			':available_status' => 'available',
-			':house_type' => $reservation['house_type'],
-			':block' => (int)$reservation['block'],
-			':lot' => (int)$reservation['lot'],
-			':reserved_status' => 'reserved',
-			':owner_id' => (int)$_SESSION['user_id'],
-		]);
-
-		if ($reopenStmt->rowCount() !== 1) {
+		if (!$house->markAsAvailableByUnit($reservation['house_type'], (int)$reservation['block'], (int)$reservation['lot'])) {
 			throw new RuntimeException('Unable to reopen house unit.');
 		}
 
@@ -158,18 +140,7 @@ try {
 		':status' => 'pending',
 	]);
 
-	$updateSql = 'UPDATE house
-		SET status = :status, owner_id = :owner_id, updated_at = NOW()
-		WHERE house_id = :house_id AND status = :expected_status';
-	$updateStmt = $conn->prepare($updateSql);
-	$updateStmt->execute([
-		':status' => 'reserved',
-		':owner_id' => (int)$_SESSION['user_id'],
-		':house_id' => (int)$houseRow['house_id'],
-		':expected_status' => 'available',
-	]);
-
-	if ($updateStmt->rowCount() !== 1) {
+	if (!$house->markAsReserved((int)$houseRow['house_id'])) {
 		throw new RuntimeException('House is no longer available.');
 	}
 

@@ -43,6 +43,22 @@ class User{
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function getLoginUserByEmail($email){
+        $query = "SELECT user_id, full_name, email, password_hash, phone_number, role FROM " . $this->table . " WHERE email = :email";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function emailExists($email){
+        $query = "SELECT user_id FROM " . $this->table . " WHERE email = :email LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
+    }
+
     public function read(){
         $query = "SELECT * FROM " . $this->table;
         $stmt = $this->conn->prepare($query);
