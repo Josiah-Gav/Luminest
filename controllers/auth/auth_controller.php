@@ -4,35 +4,42 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/models/User.php';
 
 $db = new Database();
 $user = new User($db->getConnection());
+$error = null;
 $res = null;
+
+function normalizePhoneNumber($phoneNumber) {
+    return preg_replace('/\D+/', '', (string)$phoneNumber);
+}
 
 // LOGIN
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
-    $email = $_POST['email'];
-    $password = $_POST['password'];
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
     unset($_POST['login']); // Remove the 'login' key from $_POST to avoid confusion
-    $userData = $user->getLoginUserByEmail($email);
+
     if (empty($email) || empty($password)) {
         echo "Email and password are required.";
         exit;
     }
 
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-    $_SESSION['user_id'] = $userData['user_id'];
-    $_SESSION['email'] = $userData['email'];
-    $_SESSION['username'] = $userData['full_name'];
-    $_SESSION['role'] = $userData['role']; // Default role to 'user' if not set
-    $_SESSION['phone_number'] = $userData['phone_number'];
+    $userData = $user->getLoginUserByEmail($email);
 
     try {
         if ($userData && password_verify($password, $userData['password_hash'])) {
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
+
+            session_regenerate_id(true);
             $_SESSION['user_id'] = $userData['user_id'];
             $_SESSION['email'] = $userData['email'];
+            $_SESSION['username'] = $userData['full_name'];
+            $_SESSION['role'] = $userData['role'];
+            $_SESSION['phone_number'] = $userData['phone_number'];
+            $_SESSION['expertise'] = $userData['expertise'] ?? '';
+            $_SESSION['owned_house'] = $userData['owned_house'] ?? '';
+
+
             if (isset($_SESSION['role'])) {
                 if ($_SESSION['role'] === 'Maintenance_Staff') {
                     header("Location: ../../view/Maintenance_Staff/dashboard.php");
@@ -50,29 +57,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             exit;
         }
 
-        echo "Invalid email or password.";
+        $error = "Invalid email or password.";
     } catch (PDOException $e) {
         die('Connection failed: ' . $e->getMessage());
     }
 
-    if (!isset($_SESSION['user_id'])) {
-        header("Location: ../../view/auth/login.php");
-        exit;
-    } else{
-        header("Location: view/Tenant/dashboard.php");
-    }
+    header("Location: ../../view/auth/login.php?error=" . urlencode($error));
+    exit;
 }
 
 // REGISTER
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
     $fullName = $_POST['full_name'] ?? '';
-    $email = $_POST['email'] ?? '';
+    $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
-    $phoneNumber = $_POST['phone_number'] ?? '';
+    $phoneNumber = normalizePhoneNumber($_POST['phone_number'] ?? '');
 
     // Registration includes email; login does not.
     if (!empty($email)) {
-        if (empty($fullName) || empty($password)) {
+        if (empty($fullName) || empty($password) || empty($phoneNumber)) {
             echo "All fields are required....";
             exit;
         }
@@ -80,6 +83,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
         // Check if user already exists by email.
         if ($user->emailExists($email)) {
             echo "Email already exists.";
+            exit;
+        }
+
+        if ($user->phoneNumberExists($phoneNumber)) {
+            echo "Phone number already exists.";
             exit;
         }
 

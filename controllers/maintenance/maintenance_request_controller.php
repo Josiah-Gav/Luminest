@@ -12,7 +12,13 @@ if(isset($_POST['submit_request'])) {
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
-    $res = $maintenance->createRequest($_SESSION['user_id'], $_POST['category'], $_POST['description']);
+    $res = $maintenance->createRequest(
+        $_SESSION['user_id'],
+        $_POST['title'],
+        $_POST['category'],
+        $_POST['description'],
+        $_POST['priority']
+    );
     header('Location: ../../view/Tenant/maintenance_history.php');
     exit;
 }

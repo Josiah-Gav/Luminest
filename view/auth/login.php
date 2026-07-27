@@ -36,6 +36,9 @@ require_once '../../assets/luminest.php';
                             <div><span class="badge rounded-pill lm-auth-badge px-3 py-2">Member Access</span></div>
                             <h1 class="h3 fw-bold mt-3 mb-2 lm-title">Welcome back to <span>Luminest</span></h1>
                             <p class="text-secondary mb-0">Login to continue your property journey.</p>
+                            <?php if (isset($_GET['error'])): ?>
+                                <p class="text-danger mt-2"><?= htmlspecialchars($_GET['error']) ?></p>
+                            <?php endif; ?>
                         </div>
 
                         <form method="POST" action="../../controllers/auth/auth_controller.php" class="d-grid gap-3">

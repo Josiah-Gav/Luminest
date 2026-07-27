@@ -33,5 +33,28 @@
     <?php
     endif;
     ?>
+
+    <?php
+    if ($_SESSION['role'] == 'Maintenance_Staff'):
+    ?>
+    <ul class="navbar-nav flex-row flex-wrap align-items-center gap-3 ms-auto mb-0">
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="../Maintenance_Staff/dashboard.php">Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="../Maintenance_Staff/maintenance_requests.php">Maintenance Requests</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="../Maintenance_Staff/maintenance_history.php">Maintenance History</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="../Maintenance_Staff/profile.php">Profile</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="../auth/logout.php">Logout</a>
+        </li>
+    <?php
+    endif;
+    ?>
   </div>
 </nav>

@@ -22,12 +22,13 @@ class User{
         $this->full_name = htmlspecialchars(strip_tags($this->full_name));
         $this->email = htmlspecialchars(strip_tags($this->email));
         $this->password = htmlspecialchars(strip_tags($this->password));
+        $normalizedPhoneNumber = $this->normalizePhoneNumber($this->phone_number);
 
         // Bind parameters
         $stmt->bindParam(':full_name', $this->full_name);
         $stmt->bindParam(':email', $this->email);
         $stmt->bindParam(':password_hash', password_hash($this->password, PASSWORD_DEFAULT));
-        $stmt->bindParam(':phone_number', $this->phone_number);
+        $stmt->bindParam(':phone_number', $normalizedPhoneNumber);
 
         if($stmt->execute()){
             return true;
@@ -44,7 +45,7 @@ class User{
     }
 
     public function getLoginUserByEmail($email){
-        $query = "SELECT user_id, full_name, email, password_hash, phone_number, role FROM " . $this->table . " WHERE email = :email";
+        $query = "SELECT * FROM " . $this->table . " WHERE email = :email";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':email', $email);
         $stmt->execute();
@@ -57,6 +58,21 @@ class User{
         $stmt->bindParam(':email', $email);
         $stmt->execute();
         return $stmt->rowCount() > 0;
+    }
+
+    public function phoneNumberExists($phoneNumber){
+        $normalizedPhoneNumber = $this->normalizePhoneNumber($phoneNumber);
+
+        $query = "SELECT user_id FROM " . $this->table . " WHERE phone_number = :phone_number LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':phone_number', $normalizedPhoneNumber);
+        $stmt->execute();
+
+        return $stmt->rowCount() > 0;
+    }
+
+    private function normalizePhoneNumber($phoneNumber){
+        return preg_replace('/\D+/', '', (string)$phoneNumber);
     }
 
     public function read(){
