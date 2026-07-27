@@ -15,7 +15,7 @@ return
             'name' => 'luminest',
             'user' => 'root',
             'pass' => '',
-            'port' => '3309',
+            'port' => '3306',
             'charset' => 'utf8',
         ],
         'development' => [
@@ -24,7 +24,7 @@ return
             'name' => 'luminest',
             'user' => 'root',
             'pass' => '',
-            'port' => '3309',
+            'port' => '3306',
             'charset' => 'utf8',
         ],
         'testing' => [
@@ -33,7 +33,7 @@ return
             'name' => 'luminest',
             'user' => 'root',
             'pass' => '',
-            'port' => '3309',
+            'port' => '3306',
             'charset' => 'utf8',
         ]
     ],

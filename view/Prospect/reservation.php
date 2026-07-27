@@ -165,7 +165,7 @@ try {
 							</div>
 
 							<div class="col-12 d-flex flex-wrap gap-2 align-items-center mt-2">
-								<button type="submit" class="btn btn-lm-primary">Refresh Selection</button>
+								<button type="submit" class="btn btn-lm-primary">Select This Unit</button>
 								<?php if ($selectedBlock > 0 && $selectedLot > 0): ?>
 									<span class="badge text-bg-light border">Selected: Block <?php echo (int)$selectedBlock; ?>, Lot <?php echo (int)$selectedLot; ?></span>
 								<?php endif; ?>

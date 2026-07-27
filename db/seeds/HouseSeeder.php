@@ -8,6 +8,13 @@ class HouseSeeder extends AbstractSeed
 {
     public function run(): void
     {
+        // 1. Temporarily disable foreign key checks to avoid TRUNCATE foreign key constraint errors
+        $this->execute('SET FOREIGN_KEY_CHECKS = 0;');
+        
+        // 2. Clear existing records in house table
+        $this->table('house')->truncate();
+
+        // 3. Define block configuration
         $blocksConfig = [
             1  => ['max_lot' => 20,  'type' => 'Angelique_Duplex'],
             2  => ['max_lot' => 10,  'type' => 'Armina_Single'],
@@ -28,6 +35,7 @@ class HouseSeeder extends AbstractSeed
 
         $data = [];
 
+        // 4. Generate batch data for houses
         foreach ($blocksConfig as $block => $config) {
             for ($lot = 1; $lot <= $config['max_lot']; $lot++) {
                 $data[] = [
@@ -42,7 +50,8 @@ class HouseSeeder extends AbstractSeed
             }
         }
 
-        $this->table('house')->truncate();
+        // 5. Insert data and re-enable foreign key checks
         $this->table('house')->insert($data)->saveData();
+        $this->execute('SET FOREIGN_KEY_CHECKS = 1;');
     }
 }

@@ -11,7 +11,7 @@ if (isset($_SESSION['user_id'])) {
     if ($role === 'Maintenance_Staff') {
         header('Location: ../Maintenance_Staff/dashboard.php');
     } elseif ($role === 'Property_Manager') {
-        header('Location: ../dashboard.php');
+        header('Location: ../Property_Manager/dashboard.php');
     } elseif ($role === 'Admin') {
         header('Location: ../Admin/dashboard.php');
     } elseif ($role === 'Tenant') {
