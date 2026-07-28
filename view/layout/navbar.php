@@ -53,6 +53,28 @@
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="../auth/logout.php">Logout</a>
         </li>
+    </ul>
+    <?php
+    endif;
+    ?>
+
+    <?php
+    if ($_SESSION['role'] == 'Admin'):
+    ?>
+    <ul class="navbar-nav flex-row flex-wrap align-items-center gap-3 ms-auto mb-0">
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="../Admin/dashboard.php">Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="../Admin/user_management.php">User Management</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="../Admin/profile.php">Profile</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="../auth/logout.php">Logout</a>
+        </li>
+    </ul>
     <?php
     endif;
     ?>
