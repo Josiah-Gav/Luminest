@@ -12,13 +12,35 @@ if(isset($_POST['submit_request'])) {
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
+
+    if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Tenant' || !isset($_SESSION['user_id'])) {
+        header('Location: ../../view/auth/login.php');
+        exit;
+    }
+
+    $title = trim((string) ($_POST['title'] ?? ''));
+    $category = trim((string) ($_POST['category'] ?? ''));
+    $description = trim((string) ($_POST['description'] ?? ''));
+    $priority = trim((string) ($_POST['priority'] ?? 'medium'));
+
+    if ($title === '' || $category === '' || $description === '') {
+        header('Location: ../../view/Tenant/maintenance_request.php');
+        exit;
+    }
+
     $res = $maintenance->createRequest(
         $_SESSION['user_id'],
-        $_POST['title'],
-        $_POST['category'],
-        $_POST['description'],
-        $_POST['priority']
+        $title,
+        $category,
+        $description,
+        $priority
     );
+
+    if (!$res) {
+        header('Location: ../../view/Tenant/maintenance_request.php');
+        exit;
+    }
+
     header('Location: ../../view/Tenant/maintenance_history.php');
     exit;
 }

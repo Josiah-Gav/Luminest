@@ -21,9 +21,59 @@ function columnExists(PDO $pdo, string $tableName, string $columnName): bool
     return (bool)$stmt->fetchColumn();
 }
 
+function getAssignmentColumn(PDO $pdo): ?string
+{
+    if (!tableExists($pdo, 'maintenance_requests')) {
+        return null;
+    }
+
+    if (columnExists($pdo, 'maintenance_requests', 'assigned_staff_id')) {
+        return 'assigned_staff_id';
+    }
+
+    if (columnExists($pdo, 'maintenance_requests', 'assigned_staff')) {
+        return 'assigned_staff';
+    }
+
+    return null;
+}
+
+function getMaintenanceRequestIdColumn(PDO $pdo): ?string
+{
+    if (!tableExists($pdo, 'maintenance_requests')) {
+        return null;
+    }
+
+    if (columnExists($pdo, 'maintenance_requests', 'request_id')) {
+        return 'request_id';
+    }
+
+    if (columnExists($pdo, 'maintenance_requests', 'id')) {
+        return 'id';
+    }
+
+    return null;
+}
+
+function getMaintenanceStatusColumn(PDO $pdo): ?string
+{
+    if (!tableExists($pdo, 'maintenance_requests')) {
+        return null;
+    }
+
+    if (columnExists($pdo, 'maintenance_requests', 'status')) {
+        return 'status';
+    }
+
+    return null;
+}
+
 function fetchStaff(PDO $pdo, string $search = ''): array
 {
-    $canCountAssignments = tableExists($pdo, 'maintenance_requests') && columnExists($pdo, 'maintenance_requests', 'assigned_staff_id');
+    $assignedStaffColumn = getAssignmentColumn($pdo);
+    $requestIdColumn = getMaintenanceRequestIdColumn($pdo);
+    $statusColumn = getMaintenanceStatusColumn($pdo);
+    $canCountAssignments = $assignedStaffColumn !== null && $requestIdColumn !== null;
 
     $select = "
         SELECT
@@ -34,10 +84,15 @@ function fetchStaff(PDO $pdo, string $search = ''): array
             u.created_at
     ";
 
-    if ($canCountAssignments) {
-        $select .= ", COALESCE(COUNT(m.request_id), 0) AS assigned_requests ";
+    if ($canCountAssignments && $statusColumn !== null) {
+        $select .= ", COALESCE(SUM(CASE WHEN m.{$statusColumn} IN ('pending', 'accepted', 'in-progress', 'on-hold') THEN 1 ELSE 0 END), 0) AS active_requests ";
+        $select .= ", COALESCE(SUM(CASE WHEN m.{$statusColumn} IN ('resolved', 'completed') THEN 1 ELSE 0 END), 0) AS completed_requests ";
+    } elseif ($canCountAssignments) {
+        $select .= ", COALESCE(COUNT(m.{$requestIdColumn}), 0) AS active_requests ";
+        $select .= ", 0 AS completed_requests ";
     } else {
-        $select .= ", 0 AS assigned_requests ";
+        $select .= ", 0 AS active_requests ";
+        $select .= ", 0 AS completed_requests ";
     }
 
     $sql = $select . "
@@ -45,7 +100,9 @@ function fetchStaff(PDO $pdo, string $search = ''): array
     ";
 
     if ($canCountAssignments) {
-        $sql .= " LEFT JOIN maintenance_requests m ON u.user_id = m.assigned_staff_id ";
+        $sql .= " LEFT JOIN maintenance_requests m ON u.user_id = m.{$assignedStaffColumn}";
+
+        $sql .= " ";
     }
 
     $sql .= " WHERE u.role = 'Maintenance_Staff' ";
@@ -142,11 +199,16 @@ try {
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold mb-0"><i class="fa-solid fa-user-gear text-dark me-2"></i>Maintenance Staff Management</h2>
-            <p class="text-muted mb-0">AJAX search for maintenance staff with assignment visibility</p>
+            <p class="text-muted mb-0">AJAX search for maintenance staff with active and completed request counts</p>
         </div>
-        <a href="dashboard.php" class="btn btn-outline-secondary btn-sm">
-            <i class="fa-solid fa-arrow-left me-1"></i> Dashboard
-        </a>
+        <div class="d-flex gap-2">
+            <a href="maintenance_history.php" class="btn btn-outline-dark btn-sm">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i> Maintenance History
+            </a>
+            <a href="dashboard.php" class="btn btn-outline-secondary btn-sm">
+                <i class="fa-solid fa-arrow-left me-1"></i> Dashboard
+            </a>
+        </div>
     </div>
 
     <?php if ($errorMsg): ?>
@@ -179,13 +241,14 @@ try {
                             <th>Name</th>
                             <th>Email</th>
                             <th>Phone</th>
-                            <th>Assigned Requests</th>
+                            <th>Active Assignments</th>
+                            <th>Completed Jobs</th>
                             <th class="text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody id="staffTableBody">
                         <?php if (empty($staffMembers)): ?>
-                            <tr><td colspan="6" class="text-center py-4 text-muted">No maintenance staff found.</td></tr>
+                            <tr><td colspan="7" class="text-center py-4 text-muted">No maintenance staff found.</td></tr>
                         <?php else: ?>
                             <?php foreach ($staffMembers as $row): ?>
                                 <tr>
@@ -193,7 +256,8 @@ try {
                                     <td><?= htmlspecialchars($row['full_name']) ?></td>
                                     <td><?= htmlspecialchars($row['email']) ?></td>
                                     <td><?= htmlspecialchars($row['phone_number'] ?? 'N/A') ?></td>
-                                    <td><span class="badge bg-primary"><?= htmlspecialchars((string)$row['assigned_requests']) ?></span></td>
+                                    <td><span class="badge bg-primary"><?= htmlspecialchars((string)$row['active_requests']) ?></span></td>
+                                    <td><span class="badge bg-success"><?= htmlspecialchars((string)$row['completed_requests']) ?></span></td>
                                     <td class="text-center">
                                         <button type="button" class="btn btn-sm btn-outline-danger btn-remove" data-user-id="<?= htmlspecialchars((string)$row['user_id']) ?>">
                                             Remove Staff Role
@@ -234,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function () {
         resultCount.textContent = `Total Staff: ${rows.length}`;
 
         if (!Array.isArray(rows) || rows.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No matching staff found.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No matching staff found.</td></tr>';
             return;
         }
 
@@ -244,7 +308,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td>${escapeHtml(row.full_name)}</td>
                 <td>${escapeHtml(row.email)}</td>
                 <td>${escapeHtml(row.phone_number || 'N/A')}</td>
-                <td><span class="badge bg-primary">${escapeHtml(row.assigned_requests)}</span></td>
+                <td><span class="badge bg-primary">${escapeHtml(row.active_requests)}</span></td>
+                <td><span class="badge bg-success">${escapeHtml(row.completed_requests)}</span></td>
                 <td class="text-center">
                     <button type="button" class="btn btn-sm btn-outline-danger btn-remove" data-user-id="${escapeHtml(row.user_id)}">Remove Staff Role</button>
                 </td>

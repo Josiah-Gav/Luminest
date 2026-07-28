@@ -52,7 +52,7 @@ function getAssignedStaffColumn(array $columns): ?string
 
 function getStaffList(PDO $pdo): array
 {
-    $stmt = $pdo->query("SELECT user_id, full_name FROM users WHERE role = 'Maintenance_Staff' ORDER BY full_name ASC");
+    $stmt = $pdo->query("SELECT user_id, full_name, expertise FROM users WHERE role = 'Maintenance_Staff' ORDER BY full_name ASC");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -130,6 +130,10 @@ function fetchMaintenanceRequests(PDO $pdo, string $search = '', string $status 
         $params[':status'] = $status;
     }
 
+    if (hasColumn($columns, 'status')) {
+        $sql .= " AND m.status <> 'completed' ";
+    }
+
     if ($priority !== '' && hasColumn($columns, 'priority')) {
         $sql .= ' AND m.priority = :priority ';
         $params[':priority'] = $priority;
@@ -166,9 +170,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
         $sets = [];
         $params = [':request_id' => $requestId];
 
+        $requestLookup = $pdo->prepare("SELECT * FROM maintenance_requests WHERE {$idColumn} = :request_id LIMIT 1");
+        $requestLookup->execute([':request_id' => $requestId]);
+        $requestRow = $requestLookup->fetch(PDO::FETCH_ASSOC);
+
+        if (!$requestRow) {
+            throw new RuntimeException('Maintenance request not found.');
+        }
+
         if (hasColumn($columns, 'status')) {
             $newStatus = trim((string)($_POST['status'] ?? ''));
             if ($newStatus !== '') {
+                if ($newStatus === 'in_progress') {
+                    $newStatus = 'in-progress';
+                }
+
+                $allowedStatuses = ['pending', 'accepted', 'in-progress', 'resolved', 'cancelled', 'rejected', 'on-hold'];
+                if (!in_array($newStatus, $allowedStatuses, true)) {
+                    throw new RuntimeException('Invalid maintenance status.');
+                }
+
                 $sets[] = 'status = :status';
                 $params[':status'] = $newStatus;
             }
@@ -193,8 +214,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
                 if ($staffId === false) {
                     throw new RuntimeException('Invalid assigned staff ID.');
                 }
+
+                $requestCategory = strtolower((string)($requestRow['category'] ?? ''));
+
+                $staffQuery = $pdo->prepare("SELECT role, expertise FROM users WHERE user_id = :staff_id LIMIT 1");
+                $staffQuery->execute([':staff_id' => $staffId]);
+                $staffRow = $staffQuery->fetch(PDO::FETCH_ASSOC);
+
+                if (!$staffRow || ($staffRow['role'] ?? '') !== 'Maintenance_Staff') {
+                    throw new RuntimeException('Selected user is not a maintenance staff member.');
+                }
+
+                $expertise = strtolower((string)($staffRow['expertise'] ?? ''));
+                if ($requestCategory !== '' && $expertise !== '' && $expertise !== $requestCategory && $expertise !== 'general') {
+                    throw new RuntimeException('Selected staff expertise does not match this maintenance role.');
+                }
+
                 $sets[] = "{$assignedStaffColumn} = :assigned_staff_id";
                 $params[':assigned_staff_id'] = $staffId;
+
+                if (hasColumn($columns, 'status') && !array_key_exists(':status', $params) && strtolower((string)($requestRow['status'] ?? 'pending')) === 'pending') {
+                    $sets[] = 'status = :status';
+                    $params[':status'] = 'accepted';
+                }
             }
         }
 
@@ -279,9 +321,14 @@ if ($tableReady) {
             <h2 class="fw-bold mb-0"><i class="fa-solid fa-screwdriver-wrench text-warning me-2"></i>Maintenance Request Module</h2>
             <p class="text-muted mb-0">Track, search, assign, and update maintenance concerns</p>
         </div>
-        <a href="dashboard.php" class="btn btn-outline-secondary btn-sm">
-            <i class="fa-solid fa-arrow-left me-1"></i> Dashboard
-        </a>
+        <div class="d-flex gap-2">
+            <a href="maintenance_history.php" class="btn btn-outline-dark btn-sm">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i> History
+            </a>
+            <a href="dashboard.php" class="btn btn-outline-secondary btn-sm">
+                <i class="fa-solid fa-arrow-left me-1"></i> Dashboard
+            </a>
+        </div>
     </div>
 
     <?php if (!$tableReady): ?>
@@ -307,10 +354,12 @@ if ($tableReady) {
                     <select id="statusFilter" class="form-select" <?= !$tableReady ? 'disabled' : '' ?>>
                         <option value="">All Statuses</option>
                         <option value="pending">Pending</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="completed">Completed</option>
+                        <option value="accepted">Accepted</option>
+                        <option value="in-progress">In Progress</option>
                         <option value="resolved">Resolved</option>
-                        <option value="closed">Closed</option>
+                        <option value="on-hold">On Hold</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="rejected">Rejected</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -359,7 +408,7 @@ if ($tableReady) {
                                     <td>
                                         <select class="form-select form-select-sm update-field" data-request-id="<?= htmlspecialchars((string)$row['request_id']) ?>" data-field="status">
                                             <?php
-                                                $statusOptions = ['pending', 'in_progress', 'completed', 'resolved', 'closed'];
+                                                $statusOptions = ['pending', 'accepted', 'in-progress', 'resolved', 'on-hold', 'cancelled', 'rejected'];
                                                 $currentStatus = strtolower((string)($row['status'] ?? 'pending'));
                                                 foreach ($statusOptions as $statusOption) {
                                                     $selected = $currentStatus === $statusOption ? 'selected' : '';
@@ -385,7 +434,7 @@ if ($tableReady) {
                                             <option value="">Unassigned</option>
                                             <?php foreach ($staffList as $staff): ?>
                                                 <option value="<?= htmlspecialchars((string)$staff['user_id']) ?>" <?= (string)$row['assigned_staff_id'] === (string)$staff['user_id'] ? 'selected' : '' ?>>
-                                                    <?= htmlspecialchars($staff['full_name']) ?>
+                                                    <?= htmlspecialchars($staff['full_name'] . (!empty($staff['expertise']) ? ' (' . $staff['expertise'] . ')' : '')) ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
@@ -460,10 +509,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     <td>
                         <select class="form-select form-select-sm update-field" data-request-id="${escapeHtml(row.request_id)}" data-field="status">
                             <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
-                            <option value="in_progress" ${status === 'in_progress' ? 'selected' : ''}>In progress</option>
-                            <option value="completed" ${status === 'completed' ? 'selected' : ''}>Completed</option>
+                            <option value="accepted" ${status === 'accepted' ? 'selected' : ''}>Accepted</option>
+                            <option value="in-progress" ${status === 'in-progress' ? 'selected' : ''}>In progress</option>
                             <option value="resolved" ${status === 'resolved' ? 'selected' : ''}>Resolved</option>
-                            <option value="closed" ${status === 'closed' ? 'selected' : ''}>Closed</option>
+                            <option value="on-hold" ${status === 'on-hold' ? 'selected' : ''}>On hold</option>
+                            <option value="cancelled" ${status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                            <option value="rejected" ${status === 'rejected' ? 'selected' : ''}>Rejected</option>
                         </select>
                     </td>
                     <td>

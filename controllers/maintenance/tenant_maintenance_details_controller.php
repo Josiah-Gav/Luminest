@@ -22,12 +22,12 @@ $success = '';
 if (!$request_id) {
     $error = 'Invalid request ID.';
 } else {
-    if (isset($_POST['mark_resolved'])) {
-        $updated = $maintenance->markRequestAsResolvedByTenant($request_id, $tenant_id);
+    if (isset($_POST['mark_completed'])) {
+        $updated = $maintenance->markRequestAsCompletedByTenant($request_id, $tenant_id);
         if ($updated) {
-            $success = 'Maintenance request marked as resolved.';
+            $success = 'Maintenance request marked as completed.';
         } else {
-            $error = 'Unable to mark this request as resolved.';
+            $error = 'Unable to mark this request as completed.';
         }
     }
 

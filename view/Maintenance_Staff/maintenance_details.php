@@ -28,8 +28,8 @@ require_once '../../controllers/maintenance/maintenance_details_controller.php';
 					<div class="col-md-6"><strong>Created:</strong> <?php echo htmlspecialchars($request['created_at']); ?></div>
 					<div class="col-12"><strong>Title:</strong> <?php echo htmlspecialchars($request['title']); ?></div>
 					<div class="col-12"><strong>Description:</strong><br><?php echo nl2br(htmlspecialchars($request['description'])); ?></div>
-					<div class="col-12"><strong>Completed At:</strong> <?php echo htmlspecialchars($request['completed_at'] ?? 'Not yet completed'); ?></div>
-					<div class="col-12"><strong>Resolved At:</strong> <?php echo htmlspecialchars($request['resolved_at'] ?? 'Not yet resolved'); ?></div>
+					<div class="col-12"><strong>Marked Done At:</strong> <?php echo htmlspecialchars($request['resolved_at'] ?? 'Not yet marked done'); ?></div>
+					<div class="col-12"><strong>Tenant Completed At:</strong> <?php echo htmlspecialchars($request['completed_at'] ?? 'Not yet completed'); ?></div>
 				</div>
 			</div>
 		</div>
@@ -42,7 +42,7 @@ require_once '../../controllers/maintenance/maintenance_details_controller.php';
 						<label for="status" class="form-label">Status</label>
 						<select id="status" name="status" class="form-select" required>
 							<?php
-							$statuses = ['in-progress', 'completed'];
+							$statuses = ['in-progress', 'resolved'];
 							foreach ($statuses as $status_option):
 							?>
 								<option value="<?php echo $status_option; ?>" <?php echo ($request['status'] === $status_option) ? 'selected' : ''; ?>>

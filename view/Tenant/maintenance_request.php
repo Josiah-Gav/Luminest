@@ -1,6 +1,11 @@
 <?php
 require_once '../layout/header.php';
 require_once '../layout/navbar.php';
+require_once '../../database/db.php';
+require_once '../../models/Maintenance.php';
+
+$maintenance = new Maintenance($db->getConnection());
+$categories = $maintenance->getRequestCategoryOptions();
 ?>
 
 <h1>Maintenance Request</h1>
@@ -13,13 +18,11 @@ require_once '../layout/navbar.php';
     <label for="description">Description:</label>
     <textarea id="description" name="description" required></textarea>
 
-    <label for="category">Category:</label>
+    <label for="category">Required Staff Role:</label>
     <select id="category" name="category" required>
-        <option value="plumbing">Plumbing</option>
-        <option value="electrical">Electrical</option>
-        <option value="carpentry">Carpentry</option>
-        <option value="appliance">Appliance</option>
-        <option value="general">General</option>
+        <?php foreach ($categories as $category): ?>
+            <option value="<?php echo htmlspecialchars($category); ?>"><?php echo htmlspecialchars(ucfirst(str_replace('-', ' ', $category))); ?></option>
+        <?php endforeach; ?>
     </select>
 
     <label for="priority">Priority:</label>
