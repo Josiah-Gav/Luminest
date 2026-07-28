@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                 if ($_SESSION['role'] === 'Maintenance_Staff') {
                     header("Location: ../../view/Maintenance_Staff/dashboard.php");
                 } elseif ($_SESSION['role'] === 'Property_Manager') {
-                    header("Location: ../../view/dashboard.php");
+                    header("Location: ../../view/Property_Manager/dashboard.php");
                 } elseif ($_SESSION['role'] === 'Admin') {
                     header("Location: ../../view/Admin/dashboard.php");
                 } elseif ($_SESSION['role'] === 'Tenant') {

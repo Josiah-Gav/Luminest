@@ -37,6 +37,19 @@ function selectExpr(array $columns, string $column, string $alias): string
     return "NULL AS {$alias}";
 }
 
+function getAssignedStaffColumn(array $columns): ?string
+{
+    if (hasColumn($columns, 'assigned_staff_id')) {
+        return 'assigned_staff_id';
+    }
+
+    if (hasColumn($columns, 'assigned_staff')) {
+        return 'assigned_staff';
+    }
+
+    return null;
+}
+
 function getStaffList(PDO $pdo): array
 {
     $stmt = $pdo->query("SELECT user_id, full_name FROM users WHERE role = 'Maintenance_Staff' ORDER BY full_name ASC");
@@ -56,6 +69,8 @@ function fetchMaintenanceRequests(PDO $pdo, string $search = '', string $status 
         return [];
     }
 
+    $assignedStaffColumn = getAssignedStaffColumn($columns);
+
     $selectParts = [
         "m.{$idColumn} AS request_id",
         selectExpr($columns, 'title', 'title'),
@@ -64,7 +79,7 @@ function fetchMaintenanceRequests(PDO $pdo, string $search = '', string $status 
         selectExpr($columns, 'priority', 'priority'),
         selectExpr($columns, 'status', 'status'),
         selectExpr($columns, 'tenant_id', 'tenant_id'),
-        selectExpr($columns, 'assigned_staff_id', 'assigned_staff_id'),
+        $assignedStaffColumn !== null ? "m.{$assignedStaffColumn} AS assigned_staff_id" : "NULL AS assigned_staff_id",
         selectExpr($columns, 'block', 'block'),
         selectExpr($columns, 'lot', 'lot'),
         selectExpr($columns, 'created_at', 'created_at'),
@@ -79,8 +94,8 @@ function fetchMaintenanceRequests(PDO $pdo, string $search = '', string $status 
         ? " LEFT JOIN users t ON m.tenant_id = t.user_id "
         : " LEFT JOIN users t ON 1 = 0 ";
 
-    $sql .= hasColumn($columns, 'assigned_staff_id')
-        ? " LEFT JOIN users s ON m.assigned_staff_id = s.user_id "
+    $sql .= $assignedStaffColumn !== null
+        ? " LEFT JOIN users s ON m.{$assignedStaffColumn} = s.user_id "
         : " LEFT JOIN users s ON 1 = 0 ";
 
     $sql .= " WHERE 1 = 1 ";
@@ -167,16 +182,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
             }
         }
 
-        if (hasColumn($columns, 'assigned_staff_id')) {
-            $staffIdRaw = trim((string)($_POST['assigned_staff_id'] ?? ''));
+        $assignedStaffColumn = getAssignedStaffColumn($columns);
+
+        if ($assignedStaffColumn !== null) {
+            $staffIdRaw = trim((string)($_POST['assigned_staff_id'] ?? $_POST['assigned_staff'] ?? ''));
             if ($staffIdRaw === '') {
-                $sets[] = 'assigned_staff_id = NULL';
+                $sets[] = "{$assignedStaffColumn} = NULL";
             } else {
                 $staffId = filter_var($staffIdRaw, FILTER_VALIDATE_INT);
                 if ($staffId === false) {
                     throw new RuntimeException('Invalid assigned staff ID.');
                 }
-                $sets[] = 'assigned_staff_id = :assigned_staff_id';
+                $sets[] = "{$assignedStaffColumn} = :assigned_staff_id";
                 $params[':assigned_staff_id'] = $staffId;
             }
         }
