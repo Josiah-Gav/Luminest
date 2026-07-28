@@ -3,7 +3,7 @@ session_start();
 require_once __DIR__ . '/../../database/db.php';
 
 if (isset($_SESSION['role']) && $_SESSION['role'] !== 'Property_Manager') {
-    header('Location: ../../index.php');
+    header('Location: ../../welcome.php');
     exit;
 }
 

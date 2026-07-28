@@ -56,6 +56,52 @@ function getStaffList(PDO $pdo): array
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+function formatStatusLabel(string $status): string
+{
+    return ucwords(str_replace(['-', '_'], ' ', strtolower($status)));
+}
+
+function statusBadgeClass(string $status): string
+{
+    $normalized = strtolower($status);
+    if ($normalized === 'resolved') {
+        return 'success';
+    }
+    if ($normalized === 'accepted') {
+        return 'primary';
+    }
+    if ($normalized === 'in-progress') {
+        return 'info';
+    }
+    if ($normalized === 'on-hold') {
+        return 'warning text-dark';
+    }
+    if ($normalized === 'cancelled' || $normalized === 'rejected') {
+        return 'danger';
+    }
+    return 'secondary';
+}
+
+function formatPriorityLabel(string $priority): string
+{
+    return ucwords(str_replace(['-', '_'], ' ', strtolower($priority)));
+}
+
+function priorityBadgeClass(string $priority): string
+{
+    $normalized = strtolower($priority);
+    if ($normalized === 'urgent') {
+        return 'danger';
+    }
+    if ($normalized === 'high') {
+        return 'warning text-dark';
+    }
+    if ($normalized === 'medium') {
+        return 'primary';
+    }
+    return 'secondary';
+}
+
 function fetchMaintenanceRequests(PDO $pdo, string $search = '', string $status = '', string $priority = ''): array
 {
     if (!tableExists($pdo, 'maintenance_requests')) {
@@ -147,6 +193,52 @@ function fetchMaintenanceRequests(PDO $pdo, string $search = '', string $status 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+function fetchMaintenanceRequestById(PDO $pdo, int $requestId): ?array
+{
+    if (!tableExists($pdo, 'maintenance_requests')) {
+        return null;
+    }
+
+    $columns = getColumns($pdo, 'maintenance_requests');
+    $idColumn = hasColumn($columns, 'request_id') ? 'request_id' : (hasColumn($columns, 'id') ? 'id' : null);
+
+    if ($idColumn === null) {
+        return null;
+    }
+
+    $assignedStaffColumn = getAssignedStaffColumn($columns);
+
+    $selectParts = [
+        "m.{$idColumn} AS request_id",
+        selectExpr($columns, 'title', 'title'),
+        selectExpr($columns, 'description', 'description'),
+        selectExpr($columns, 'category', 'category'),
+        selectExpr($columns, 'priority', 'priority'),
+        selectExpr($columns, 'status', 'status'),
+        selectExpr($columns, 'tenant_id', 'tenant_id'),
+        $assignedStaffColumn !== null ? "m.{$assignedStaffColumn} AS assigned_staff_id" : "NULL AS assigned_staff_id",
+        selectExpr($columns, 'created_at', 'created_at'),
+        selectExpr($columns, 'updated_at', 'updated_at'),
+        "t.full_name AS tenant_name",
+        "s.full_name AS staff_name"
+    ];
+
+    $sql = "SELECT " . implode(', ', $selectParts) . " FROM maintenance_requests m ";
+    $sql .= hasColumn($columns, 'tenant_id')
+        ? " LEFT JOIN users t ON m.tenant_id = t.user_id "
+        : " LEFT JOIN users t ON 1 = 0 ";
+    $sql .= $assignedStaffColumn !== null
+        ? " LEFT JOIN users s ON m.{$assignedStaffColumn} = s.user_id "
+        : " LEFT JOIN users s ON 1 = 0 ";
+    $sql .= " WHERE m.{$idColumn} = :request_id LIMIT 1";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([':request_id' => $requestId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return $row ?: null;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_request') {
     header('Content-Type: application/json');
 
@@ -178,37 +270,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
             throw new RuntimeException('Maintenance request not found.');
         }
 
-        if (hasColumn($columns, 'status')) {
-            $newStatus = trim((string)($_POST['status'] ?? ''));
-            if ($newStatus !== '') {
-                if ($newStatus === 'in_progress') {
-                    $newStatus = 'in-progress';
-                }
-
-                $allowedStatuses = ['pending', 'accepted', 'in-progress', 'resolved', 'cancelled', 'rejected', 'on-hold'];
-                if (!in_array($newStatus, $allowedStatuses, true)) {
-                    throw new RuntimeException('Invalid maintenance status.');
-                }
-
-                $sets[] = 'status = :status';
-                $params[':status'] = $newStatus;
-            }
-        }
-
-        if (hasColumn($columns, 'priority')) {
-            $newPriority = trim((string)($_POST['priority'] ?? ''));
-            if ($newPriority !== '') {
-                $sets[] = 'priority = :priority';
-                $params[':priority'] = $newPriority;
-            }
-        }
-
         $assignedStaffColumn = getAssignedStaffColumn($columns);
 
         if ($assignedStaffColumn !== null) {
             $staffIdRaw = trim((string)($_POST['assigned_staff_id'] ?? $_POST['assigned_staff'] ?? ''));
             if ($staffIdRaw === '') {
                 $sets[] = "{$assignedStaffColumn} = NULL";
+
+                if (hasColumn($columns, 'status') && strtolower((string)($requestRow['status'] ?? 'pending')) === 'accepted') {
+                    $sets[] = 'status = :status';
+                    $params[':status'] = 'pending';
+                }
             } else {
                 $staffId = filter_var($staffIdRaw, FILTER_VALIDATE_INT);
                 if ($staffId === false) {
@@ -233,7 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
                 $sets[] = "{$assignedStaffColumn} = :assigned_staff_id";
                 $params[':assigned_staff_id'] = $staffId;
 
-                if (hasColumn($columns, 'status') && !array_key_exists(':status', $params) && strtolower((string)($requestRow['status'] ?? 'pending')) === 'pending') {
+                if (hasColumn($columns, 'status') && strtolower((string)($requestRow['status'] ?? 'pending')) === 'pending') {
                     $sets[] = 'status = :status';
                     $params[':status'] = 'accepted';
                 }
@@ -252,9 +324,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
 
+        $updatedRow = fetchMaintenanceRequestById($pdo, $requestId);
+
         echo json_encode([
             'success' => true,
             'message' => "Maintenance request #{$requestId} updated.",
+            'data' => $updatedRow,
         ]);
     } catch (Throwable $e) {
         echo json_encode([
@@ -398,7 +473,7 @@ if ($tableReady) {
                             <tr><td colspan="7" class="text-center py-4 text-muted">No maintenance requests found.</td></tr>
                         <?php else: ?>
                             <?php foreach ($requests as $row): ?>
-                                <tr>
+                                <tr data-request-id="<?= htmlspecialchars((string)$row['request_id']) ?>">
                                     <td><strong>#<?= htmlspecialchars((string)$row['request_id']) ?></strong></td>
                                     <td>
                                         <div class="fw-semibold"><?= htmlspecialchars($row['title'] ?? 'Untitled') ?></div>
@@ -406,28 +481,16 @@ if ($tableReady) {
                                     </td>
                                     <td><?= htmlspecialchars($row['tenant_name'] ?? 'Unknown Tenant') ?></td>
                                     <td>
-                                        <select class="form-select form-select-sm update-field" data-request-id="<?= htmlspecialchars((string)$row['request_id']) ?>" data-field="status">
-                                            <?php
-                                                $statusOptions = ['pending', 'accepted', 'in-progress', 'resolved', 'on-hold', 'cancelled', 'rejected'];
-                                                $currentStatus = strtolower((string)($row['status'] ?? 'pending'));
-                                                foreach ($statusOptions as $statusOption) {
-                                                    $selected = $currentStatus === $statusOption ? 'selected' : '';
-                                                    echo '<option value="' . htmlspecialchars($statusOption) . '" ' . $selected . '>' . htmlspecialchars(ucfirst(str_replace('_', ' ', $statusOption))) . '</option>';
-                                                }
-                                            ?>
-                                        </select>
+                                        <?php $currentStatus = strtolower((string)($row['status'] ?? 'pending')); ?>
+                                        <span class="badge bg-<?= htmlspecialchars(statusBadgeClass($currentStatus)) ?>" data-status-label>
+                                            <?= htmlspecialchars(formatStatusLabel($currentStatus)) ?>
+                                        </span>
                                     </td>
                                     <td>
-                                        <select class="form-select form-select-sm update-field" data-request-id="<?= htmlspecialchars((string)$row['request_id']) ?>" data-field="priority">
-                                            <?php
-                                                $priorityOptions = ['low', 'medium', 'high', 'urgent'];
-                                                $currentPriority = strtolower((string)($row['priority'] ?? 'medium'));
-                                                foreach ($priorityOptions as $priorityOption) {
-                                                    $selected = $currentPriority === $priorityOption ? 'selected' : '';
-                                                    echo '<option value="' . htmlspecialchars($priorityOption) . '" ' . $selected . '>' . htmlspecialchars(ucfirst($priorityOption)) . '</option>';
-                                                }
-                                            ?>
-                                        </select>
+                                        <?php $currentPriority = strtolower((string)($row['priority'] ?? 'medium')); ?>
+                                        <span class="badge bg-<?= htmlspecialchars(priorityBadgeClass($currentPriority)) ?>" data-priority-label>
+                                            <?= htmlspecialchars(formatPriorityLabel($currentPriority)) ?>
+                                        </span>
                                     </td>
                                     <td>
                                         <select class="form-select form-select-sm update-field" data-request-id="<?= htmlspecialchars((string)$row['request_id']) ?>" data-field="assigned_staff_id">
@@ -439,7 +502,7 @@ if ($tableReady) {
                                             <?php endforeach; ?>
                                         </select>
                                     </td>
-                                    <td><?= !empty($row['updated_at']) ? htmlspecialchars((string)$row['updated_at']) : htmlspecialchars((string)($row['created_at'] ?? 'N/A')) ?></td>
+                                    <td data-updated-at><?= !empty($row['updated_at']) ? htmlspecialchars((string)$row['updated_at']) : htmlspecialchars((string)($row['created_at'] ?? 'N/A')) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -486,6 +549,94 @@ document.addEventListener('DOMContentLoaded', function () {
         return options.join('');
     }
 
+    function getStatusBadgeClass(status) {
+        const normalized = String(status || 'pending').toLowerCase();
+        if (normalized === 'resolved') {
+            return 'success';
+        }
+        if (normalized === 'accepted') {
+            return 'primary';
+        }
+        if (normalized === 'in-progress') {
+            return 'info';
+        }
+        if (normalized === 'on-hold') {
+            return 'warning text-dark';
+        }
+        if (normalized === 'cancelled' || normalized === 'rejected') {
+            return 'danger';
+        }
+        return 'secondary';
+    }
+
+    function formatStatusLabel(status) {
+        return String(status || 'pending')
+            .toLowerCase()
+            .replace(/[-_]/g, ' ')
+            .replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
+    function getPriorityBadgeClass(priority) {
+        const normalized = String(priority || 'medium').toLowerCase();
+        if (normalized === 'urgent') {
+            return 'danger';
+        }
+        if (normalized === 'high') {
+            return 'warning text-dark';
+        }
+        if (normalized === 'medium') {
+            return 'primary';
+        }
+        return 'secondary';
+    }
+
+    function formatPriorityLabel(priority) {
+        return String(priority || 'medium')
+            .toLowerCase()
+            .replace(/[-_]/g, ' ')
+            .replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
+    function findRowByRequestId(requestId) {
+        return Array.from(tableBody.querySelectorAll('tr')).find((tr) => String(tr.getAttribute('data-request-id')) === String(requestId)) || null;
+    }
+
+    function updateRowInPlace(row) {
+        if (!row || !row.request_id) {
+            return;
+        }
+
+        const tr = findRowByRequestId(row.request_id);
+        if (!tr) {
+            return;
+        }
+
+        const status = String(row.status || 'pending').toLowerCase();
+        const statusBadge = tr.querySelector('[data-status-label]');
+        if (statusBadge) {
+            statusBadge.className = `badge bg-${getStatusBadgeClass(status)}`;
+            statusBadge.textContent = formatStatusLabel(status);
+        }
+
+        const staffSelect = tr.querySelector('select[data-field="assigned_staff_id"]');
+        if (staffSelect) {
+            const assignedId = row.assigned_staff_id == null ? '' : String(row.assigned_staff_id);
+            staffSelect.value = assignedId;
+        }
+
+        const priority = String(row.priority || 'medium').toLowerCase();
+        const priorityBadge = tr.querySelector('[data-priority-label]');
+        if (priorityBadge) {
+            priorityBadge.className = `badge bg-${getPriorityBadgeClass(priority)}`;
+            priorityBadge.textContent = formatPriorityLabel(priority);
+        }
+
+        const updatedAtCell = tr.querySelector('[data-updated-at]');
+        if (updatedAtCell) {
+            updatedAtCell.textContent = String(row.updated_at || row.created_at || 'N/A');
+        }
+    }
+
     function renderRows(rows) {
         resultCount.textContent = `Total: ${rows.length}`;
 
@@ -499,38 +650,21 @@ document.addEventListener('DOMContentLoaded', function () {
             const priority = String(row.priority || 'medium').toLowerCase();
 
             return `
-                <tr>
+                <tr data-request-id="${escapeHtml(row.request_id)}">
                     <td><strong>#${escapeHtml(row.request_id)}</strong></td>
                     <td>
                         <div class="fw-semibold">${escapeHtml(row.title || 'Untitled')}</div>
                         <small class="text-muted">${escapeHtml(row.category || 'N/A')}</small>
                     </td>
                     <td>${escapeHtml(row.tenant_name || 'Unknown Tenant')}</td>
-                    <td>
-                        <select class="form-select form-select-sm update-field" data-request-id="${escapeHtml(row.request_id)}" data-field="status">
-                            <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
-                            <option value="accepted" ${status === 'accepted' ? 'selected' : ''}>Accepted</option>
-                            <option value="in-progress" ${status === 'in-progress' ? 'selected' : ''}>In progress</option>
-                            <option value="resolved" ${status === 'resolved' ? 'selected' : ''}>Resolved</option>
-                            <option value="on-hold" ${status === 'on-hold' ? 'selected' : ''}>On hold</option>
-                            <option value="cancelled" ${status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
-                            <option value="rejected" ${status === 'rejected' ? 'selected' : ''}>Rejected</option>
-                        </select>
-                    </td>
-                    <td>
-                        <select class="form-select form-select-sm update-field" data-request-id="${escapeHtml(row.request_id)}" data-field="priority">
-                            <option value="low" ${priority === 'low' ? 'selected' : ''}>Low</option>
-                            <option value="medium" ${priority === 'medium' ? 'selected' : ''}>Medium</option>
-                            <option value="high" ${priority === 'high' ? 'selected' : ''}>High</option>
-                            <option value="urgent" ${priority === 'urgent' ? 'selected' : ''}>Urgent</option>
-                        </select>
-                    </td>
+                    <td><span class="badge bg-${getStatusBadgeClass(status)}" data-status-label>${escapeHtml(formatStatusLabel(status))}</span></td>
+                    <td><span class="badge bg-${getPriorityBadgeClass(priority)}" data-priority-label>${escapeHtml(formatPriorityLabel(priority))}</span></td>
                     <td>
                         <select class="form-select form-select-sm update-field" data-request-id="${escapeHtml(row.request_id)}" data-field="assigned_staff_id">
                             ${staffOptions(row.assigned_staff_id)}
                         </select>
                     </td>
-                    <td>${escapeHtml(row.updated_at || row.created_at || 'N/A')}</td>
+                    <td data-updated-at>${escapeHtml(row.updated_at || row.created_at || 'N/A')}</td>
                 </tr>
             `;
         }).join('');
@@ -595,7 +729,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (payload.success) {
                 showAlert(payload.message, 'success');
-                loadData();
+                if (payload.data) {
+                    updateRowInPlace(payload.data);
+                }
+
+                const hasActiveFilters = searchInput.value.trim() !== '' || statusFilter.value !== '' || priorityFilter.value !== '';
+                if (hasActiveFilters) {
+                    loadData();
+                }
             } else {
                 showAlert(payload.message || 'Update failed.', 'danger');
             }
@@ -604,6 +745,10 @@ document.addEventListener('DOMContentLoaded', function () {
             showAlert('Failed to update maintenance request.', 'danger');
         }
     });
+
+    if (tableReady) {
+        setInterval(loadData, 10000);
+    }
 });
 </script>
 </body>
