@@ -75,11 +75,49 @@ class User{
         return preg_replace('/\D+/', '', (string)$phoneNumber);
     }
 
-    public function read(){
-        $query = "SELECT * FROM " . $this->table;
+    public function getByID($id){
+        $query = "SELECT * FROM " . $this->table . " WHERE user_id = :user_id";
         $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':user_id', $id);
         $stmt->execute();
-        $res = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        return $res;
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function updateProfile($id, $full_name, $email, $phone_number){
+        $query = "UPDATE " . $this->table . " SET full_name = :full_name, email = :email, phone_number = :phone_number WHERE user_id = :user_id";
+        $stmt = $this->conn->prepare($query);
+
+        // Sanitize input
+        $full_name = htmlspecialchars(strip_tags($full_name));
+        $email = htmlspecialchars(strip_tags($email));
+        $normalizedPhoneNumber = $this->normalizePhoneNumber($phone_number);
+
+        // Bind parameters
+        $stmt->bindParam(':full_name', $full_name);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':phone_number', $normalizedPhoneNumber);
+        $stmt->bindParam(':user_id', $id);
+
+        if($stmt->execute()){
+            return true;
+        }
+        return false;
+    }
+
+    public function updatePassword($id, $new_password){
+        $query = "UPDATE " . $this->table . " SET password_hash = :password_hash WHERE user_id = :user_id";
+        $stmt = $this->conn->prepare($query);
+
+        // Sanitize input
+        $new_password = htmlspecialchars(strip_tags($new_password));
+        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT); 
+        // Bind parameters
+        $stmt->bindParam(':password_hash', $hashed_password);
+        $stmt->bindParam(':user_id', $id);
+
+        if($stmt->execute()){
+            return true;
+        }
+        return false;
     }
 }
