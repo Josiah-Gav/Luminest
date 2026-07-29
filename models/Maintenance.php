@@ -144,12 +144,18 @@ class Maintenance{
             return false;
         }
 
-        $verifyQuery = "SELECT id FROM maintenance_requests WHERE id = :request_id LIMIT 1";
+        $verifyQuery = "SELECT id, status FROM maintenance_requests WHERE id = :request_id LIMIT 1";
         $verifyStmt = $this->conn->prepare($verifyQuery);
         $verifyStmt->bindParam(':request_id', $request_id, PDO::PARAM_INT);
         $verifyStmt->execute();
 
-        if (!$verifyStmt->fetch(PDO::FETCH_ASSOC)) {
+        $request = $verifyStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$request) {
+            return false;
+        }
+
+        if ($request['status'] === 'resolved') {
             return false;
         }
 
@@ -178,7 +184,7 @@ class Maintenance{
                       updated_at = NOW()
                   WHERE id = :request_id
                     AND tenant_id = :tenant_id
-                    AND status <> 'completed'";
+                    AND status = 'completed'";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':request_id', $request_id, PDO::PARAM_INT);
