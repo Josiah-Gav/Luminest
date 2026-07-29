@@ -1,17 +1,17 @@
 <?php
 
 class Database {
-    private $host = "localhost";
-    private $port = "3309";
-    private $username = "root";
-    private $password = "";
-    private $database = "luminest";
-    private $conn;
+    protected $host = "localhost";
+    protected $port = "3309";
+    protected $username = "root";
+    protected $password = "";
+    protected $database = "luminest";
+    protected $conn;
 
     public function __construct() {
         try {
             $dsn = "mysql:host={$this->host};port={$this->port};dbname={$this->database};charset=utf8mb4";
-            
+
             $options = [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -19,17 +19,17 @@ class Database {
             ];
 
             $this->conn = new PDO($dsn, $this->username, $this->password, $options);
-        } catch (PDOException $e) { // Fixed typo here (PDOException)
+        } catch (PDOException $e) {
             die('Connection failed: ' . $e->getMessage());
         }
     }
 
     public function getConnection() {
-        return $this->conn; 
+        return $this->conn;
     }
 
     public function setConnection($conn) {
-        $this->conn = $conn; 
+        $this->conn = $conn;
     }
 
     public function __destruct() {
@@ -37,9 +37,11 @@ class Database {
     }
 }
 
+class AppDatabase extends Database {}
+
 // -------------------------------------------------------------
 // Instantiate and expose $pdo / $conn for your dashboard views
 // -------------------------------------------------------------
-$db = new Database();
+$db = new AppDatabase();
 $pdo  = $db->getConnection();
 $conn = $pdo; // Optional alias if any views use $conn instead of $pdo

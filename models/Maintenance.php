@@ -1,9 +1,11 @@
 <?php
-class Maintenance{
-    private $conn;
+class Maintenance extends Database{
+    public function __construct($db = null){
+        parent::__construct();
 
-    public function __construct($db){
-        $this->conn = $db;
+        if ($db instanceof PDO) {
+            $this->conn = $db;
+        }
     }
 
     public function createRequest($tenant_id, $title, $category, $description, $priority = 'medium'){

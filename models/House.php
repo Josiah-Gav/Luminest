@@ -1,10 +1,8 @@
 <?php
 
-class House
+class House extends Database
 {
     public const DEFAULT_SLUG = 'aimee';
-
-    private $conn;
 
     private static $houseTypes = [
         'aimee' => [
@@ -59,7 +57,11 @@ class House
 
     public function __construct($db = null)
     {
-        $this->conn = $db;
+        parent::__construct();
+
+        if ($db instanceof PDO) {
+            $this->conn = $db;
+        }
     }
 
     public function all(): array

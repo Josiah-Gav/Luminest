@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id'])) {
 	exit;
 }
 
-$houseModel = new House($db->getConnection());
+$houseModel = new House();
 
 $selectedHouseKey = $_GET['house'] ?? House::DEFAULT_SLUG;
 $selectedHouse = $houseModel->getBySlug($selectedHouseKey);

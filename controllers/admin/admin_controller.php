@@ -28,8 +28,8 @@ $isAjaxRequest = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERV
     || !empty($_POST['ajax'])
     || !empty($_GET['ajax']);
 
-$db = new Database();
-$admin = new Admin($db->getConnection());
+$db = new AppDatabase();
+$admin = new Admin();
 $res = null;
 
 if(isset($_POST['create_user'])) {

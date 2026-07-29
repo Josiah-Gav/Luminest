@@ -14,9 +14,9 @@ $isAjaxRequest = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERV
     || !empty($_POST['ajax'])
     || !empty($_GET['ajax']);
 
-$db = new Database();
-$user = new User($db->getConnection());
-$maintenance = new Maintenance($db->getConnection());
+$db = new AppDatabase();
+$user = new User();
+$maintenance = new Maintenance();
 $res = null;
 
 if(isset($_POST['submit_request'])) {

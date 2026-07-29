@@ -39,7 +39,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Maintenance_Staff') {
                             <tbody id="maintenance-requests-table-body">
                                 <?php
                                 require_once '../../models/Maintenance.php';
-                                $maintenance = new Maintenance($db->getConnection());
+                                $maintenance = new Maintenance();
                                 $requests = $maintenance->getRequestsByStaff($_SESSION['user_id']);
                                 if (empty($requests)) {
                                     echo "<tr><td colspan='8' class='text-center text-muted py-4'>No maintenance requests assigned to you.</td></tr>";

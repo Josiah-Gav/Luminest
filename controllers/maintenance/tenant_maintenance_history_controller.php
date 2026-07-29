@@ -11,7 +11,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Tenant') {
     exit;
 }
 
-$db = new Database();
-$maintenance = new Maintenance($db->getConnection());
+$db = new AppDatabase();
+$maintenance = new Maintenance();
 $tenant_id = (int) ($_SESSION['user_id'] ?? 0);
 $requests = $maintenance->getRequestsByTenant($tenant_id);

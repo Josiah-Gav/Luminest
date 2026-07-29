@@ -1,7 +1,6 @@
 <?php
 
-class User{
-    private $conn;
+class User extends Database {
     private $table = "users";
 
     public $user_id;
@@ -10,8 +9,12 @@ class User{
     public $password;
     public $phone_number;
 
-    public function __construct($db){
-        $this->conn = $db;
+    public function __construct($db = null){
+        parent::__construct();
+
+        if ($db instanceof PDO) {
+            $this->conn = $db;
+        }
     }
 
     public function create(){

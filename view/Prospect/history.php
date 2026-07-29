@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$houseModel = new House($db->getConnection());
+$houseModel = new House();
 $reservations = [];
 $cancelStatus = $_GET['cancelled'] ?? '';
 $errorCode = $_GET['error'] ?? '';

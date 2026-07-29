@@ -22,8 +22,8 @@ $isAjaxRequest = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERV
     || !empty($_POST['ajax'])
     || !empty($_GET['ajax']);
 
-$db = new Database();
-$maintenance = new Maintenance($db->getConnection());
+$db = new AppDatabase();
+$maintenance = new Maintenance();
 $tenant_id = (int) ($_SESSION['user_id'] ?? 0);
 $request_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 $request = null;

@@ -4,7 +4,7 @@ require_once '../layout/navbar.php';
 require_once '../../database/db.php';
 require_once '../../models/Maintenance.php';
 
-$maintenance = new Maintenance($db->getConnection());
+$maintenance = new Maintenance();
 $categories = $maintenance->getRequestCategoryOptions();
 ?>
 

@@ -14,9 +14,9 @@ $isAjaxRequest = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERV
 	|| !empty($_POST['ajax'])
 	|| !empty($_GET['ajax']);
 
-$db = new Database();
-$user = new User($db->getConnection());
-$house = new House($db->getConnection());
+$db = new AppDatabase();
+$user = new User();
+$house = new House();
 
 if (session_status() === PHP_SESSION_NONE) {
 	session_start();
