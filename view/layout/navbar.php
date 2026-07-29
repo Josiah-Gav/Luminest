@@ -1,7 +1,7 @@
-<nav class="navbar navbar-expand-lg bg-body-tertiary">
+<nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm">
   <div class="container-fluid">
-    <a class="navbar-brand" href="#">
-      <img src="/luminest/assets/Luminesticon.png" alt="Logo" width="30" height="24" class="d-inline-block align-text-top">
+    <a class="navbar-brand fw-semibold text-accent-black" href="#">
+      <img src="/luminest/assets/Luminesticon.png" alt="Logo" width="30" height="24" class="d-inline-block align-text-top me-2">
       Luminest
     </a>
     <?php
@@ -67,9 +67,6 @@
         </li>
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="../Admin/user_management.php">User Management</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="../Admin/profile.php">Profile</a>
         </li>
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="../auth/logout.php">Logout</a>

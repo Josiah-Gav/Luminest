@@ -261,14 +261,19 @@ try {
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
                     const query = this.value.trim();
-                    fetch(`tenants.php?ajax_search=1&q=${encodeURIComponent(query)}`)
-                        .then(response => response.json())
-                        .then(payload => {
+                    $.ajax({
+                        url: `tenants.php?ajax_search=1&q=${encodeURIComponent(query)}`,
+                        type: 'GET',
+                        dataType: 'json',
+                        success: function (payload) {
                             if (payload.success) {
                                 renderTable(payload.data || []);
                             }
-                        })
-                        .catch(err => console.error('Tenant search error:', err));
+                        },
+                        error: function () {
+                            console.error('Tenant search error.');
+                        }
+                    });
                 }, 300);
             });
 

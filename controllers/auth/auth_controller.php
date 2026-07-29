@@ -8,7 +8,25 @@ $error = null;
 $res = null;
 
 function normalizePhoneNumber($phoneNumber) {
-    return preg_replace('/\D+/', '', (string)$phoneNumber);
+    $digits = preg_replace('/\D+/', '', (string)$phoneNumber);
+
+    if ($digits === '') {
+        return '';
+    }
+
+    if (strlen($digits) === 12 && strpos($digits, '63') === 0) {
+        return '0' . substr($digits, 2);
+    }
+
+    if (strlen($digits) === 11 && strpos($digits, '0') === 0) {
+        return $digits;
+    }
+
+    if (strlen($digits) === 10 && strpos($digits, '0') !== 0) {
+        return '0' . $digits;
+    }
+
+    return $digits;
 }
 
 // LOGIN

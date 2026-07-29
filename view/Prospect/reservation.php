@@ -172,7 +172,9 @@ try {
 							</div>
 						</form>
 
-						<form method="POST" action="../../controllers/auth/reservation_controller.php" class="mt-3">
+<div id="alertContainer" class="mt-3"></div>
+					<form id="reservationForm" method="POST" action="../../controllers/auth/reservation_controller.php" class="mt-3">
+						<input type="hidden" name="ajax" value="1">
 							<input type="hidden" name="house" value="<?php echo htmlspecialchars($selectedHouseKey, ENT_QUOTES, 'UTF-8'); ?>">
 							<input type="hidden" name="block" value="<?php echo (int)$selectedBlock; ?>">
 							<input type="hidden" name="lot" value="<?php echo (int)$selectedLot; ?>">
@@ -195,6 +197,34 @@ try {
 		</section>
 	</div>
 </main>
+
+<script>
+$(document).ready(function () {
+    function showAlert(message, type) {
+        $('#alertContainer').html('<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
+    }
+
+    $('#reservationForm').on('submit', function (e) {
+        e.preventDefault();
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function (response) {
+                if (response && response.success) {
+                    showAlert(response.message, 'success');
+                    window.location.href = response.redirect || 'reservation.php?house=' + encodeURIComponent('<?php echo htmlspecialchars($selectedHouseKey, ENT_QUOTES, 'UTF-8'); ?>');
+                } else {
+                    showAlert((response && response.message) || 'Unable to reserve the unit right now.', 'danger');
+                }
+            },
+            error: function () {
+                showAlert('Unable to reserve the unit right now.', 'danger');
+            }
+        });
+    });
+});
+</script>
 
 <?php require_once '../layout/footer.php'; ?>
 

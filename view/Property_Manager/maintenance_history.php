@@ -307,23 +307,26 @@ document.addEventListener('DOMContentLoaded', function () {
         }).join('');
     }
 
-    async function loadData() {
-        try {
-            const params = new URLSearchParams({
-                ajax: 'search',
-                q: searchInput.value.trim(),
-                status: statusFilter.value
-            });
+    function loadData() {
+        const params = $.param({
+            ajax: 'search',
+            q: searchInput.value.trim(),
+            status: statusFilter.value
+        });
 
-            const res = await fetch(`maintenance_history.php?${params.toString()}`);
-            const payload = await res.json();
-
-            if (payload.success) {
-                renderRows(payload.data || []);
+        $.ajax({
+            url: `maintenance_history.php?${params}`,
+            type: 'GET',
+            dataType: 'json',
+            success: function (payload) {
+                if (payload.success) {
+                    renderRows(payload.data || []);
+                }
+            },
+            error: function () {
+                console.error('Maintenance history search error.');
             }
-        } catch (err) {
-            console.error('Maintenance history search error:', err);
-        }
+        });
     }
 
     let debounce;

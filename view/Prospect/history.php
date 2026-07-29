@@ -97,6 +97,8 @@ function reservationStatusBadgeClass(string $status): string
                     <span class="badge text-bg-light border px-3 py-2"><?php echo count($reservations); ?> total</span>
                 </div>
 
+                <div id="alertContainer"></div>
+
                 <?php if ($cancelStatus === '1'): ?>
                     <div class="alert alert-success" role="alert">
                         Pending reservation cancelled. The house is available again.
@@ -149,10 +151,11 @@ function reservationStatusBadgeClass(string $status): string
                                         <td><?php echo htmlspecialchars($reservation['created_at'], ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td>
                                             <?php if ($status === 'pending'): ?>
-                                                <form method="POST" action="../../controllers/auth/reservation_controller.php" class="m-0">
+                                                <form class="m-0 cancel-reservation-form" method="POST" action="../../controllers/auth/reservation_controller.php">
+                                                    <input type="hidden" name="ajax" value="1">
                                                     <input type="hidden" name="cancel_reservation" value="1">
                                                     <input type="hidden" name="reservation_id" value="<?php echo (int)$reservation['reservation_id']; ?>">
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel this pending reservation?');">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
                                                         Cancel
                                                     </button>
                                                 </form>
@@ -170,5 +173,37 @@ function reservationStatusBadgeClass(string $status): string
         </section>
     </div>
 </main>
+
+<script>
+$(document).ready(function () {
+    function showAlert(message, type) {
+        $('#alertContainer').html('<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
+    }
+
+    $('.cancel-reservation-form').on('submit', function (e) {
+        e.preventDefault();
+        var $form = $(this);
+
+        $.ajax({
+            url: $form.attr('action'),
+            type: 'POST',
+            data: $form.serialize(),
+            success: function (response) {
+                if (response && response.success) {
+                    showAlert(response.message, 'success');
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 700);
+                } else {
+                    showAlert((response && response.message) || 'Unable to cancel reservation.', 'danger');
+                }
+            },
+            error: function () {
+                showAlert('Unable to cancel reservation right now.', 'danger');
+            }
+        });
+    });
+});
+</script>
 
 <?php require_once '../layout/footer.php'; ?>

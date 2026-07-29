@@ -3,6 +3,17 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/database/db.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/models/User.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/models/Maintenance.php';
 
+function sendJsonResponse($payload, $statusCode = 200) {
+    http_response_code($statusCode);
+    header('Content-Type: application/json');
+    echo json_encode($payload);
+    exit;
+}
+
+$isAjaxRequest = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+    || !empty($_POST['ajax'])
+    || !empty($_GET['ajax']);
+
 $db = new Database();
 $user = new User($db->getConnection());
 $maintenance = new Maintenance($db->getConnection());
@@ -24,6 +35,9 @@ if(isset($_POST['submit_request'])) {
     $priority = trim((string) ($_POST['priority'] ?? 'medium'));
 
     if ($title === '' || $category === '' || $description === '') {
+        if ($isAjaxRequest) {
+            sendJsonResponse(['success' => false, 'message' => 'Please fill in every required field.'], 400);
+        }
         header('Location: ../../view/Tenant/maintenance_request.php');
         exit;
     }
@@ -37,8 +51,15 @@ if(isset($_POST['submit_request'])) {
     );
 
     if (!$res) {
+        if ($isAjaxRequest) {
+            sendJsonResponse(['success' => false, 'message' => 'Unable to submit your maintenance request.'], 400);
+        }
         header('Location: ../../view/Tenant/maintenance_request.php');
         exit;
+    }
+
+    if ($isAjaxRequest) {
+        sendJsonResponse(['success' => true, 'message' => 'Maintenance request submitted successfully.', 'redirect' => '/luminest/view/Tenant/maintenance_history.php']);
     }
 
     header('Location: ../../view/Tenant/maintenance_history.php');

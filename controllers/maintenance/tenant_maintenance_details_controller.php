@@ -11,6 +11,17 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Tenant') {
     exit;
 }
 
+function sendJsonResponse($payload, $statusCode = 200) {
+    http_response_code($statusCode);
+    header('Content-Type: application/json');
+    echo json_encode($payload);
+    exit;
+}
+
+$isAjaxRequest = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+    || !empty($_POST['ajax'])
+    || !empty($_GET['ajax']);
+
 $db = new Database();
 $maintenance = new Maintenance($db->getConnection());
 $tenant_id = (int) ($_SESSION['user_id'] ?? 0);
@@ -22,12 +33,18 @@ $success = '';
 if (!$request_id) {
     $error = 'Invalid request ID.';
 } else {
-    if (isset($_POST['mark_completed'])) {
-        $updated = $maintenance->markRequestAsCompletedByTenant($request_id, $tenant_id);
+    if (isset($_POST['mark_resolved'])) {
+        $updated = $maintenance->markRequestAsResolvedByTenant($request_id, $tenant_id);
         if ($updated) {
-            $success = 'Maintenance request marked as completed.';
+            $success = 'Maintenance request marked as resolved.';
+            if ($isAjaxRequest) {
+                sendJsonResponse(['success' => true, 'message' => $success]);
+            }
         } else {
-            $error = 'Unable to mark this request as completed.';
+            $error = 'Unable to mark this request as resolved.';
+            if ($isAjaxRequest) {
+                sendJsonResponse(['success' => false, 'message' => $error], 400);
+            }
         }
     }
 

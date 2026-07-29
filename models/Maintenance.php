@@ -103,12 +103,10 @@ class Maintenance{
                   LEFT JOIN users u ON mr.tenant_id = u.user_id
                   LEFT JOIN house h ON mr.house_id = h.house_id
                   WHERE mr.id = :request_id
-                    AND mr.assigned_staff = :staff_id
                   LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':request_id', $request_id, PDO::PARAM_INT);
-        $stmt->bindParam(':staff_id', $staff_id, PDO::PARAM_INT);
         $stmt->execute();
 
         $request = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -140,40 +138,47 @@ class Maintenance{
     }
 
     public function updateRequestStatusByStaff($request_id, $staff_id, $status, $resolution_notes = null){
-        $allowed_statuses = ['in-progress', 'resolved'];
+        $allowed_statuses = ['in-progress', 'completed'];
 
         if (!in_array($status, $allowed_statuses, true)) {
+            return false;
+        }
+
+        $verifyQuery = "SELECT id FROM maintenance_requests WHERE id = :request_id LIMIT 1";
+        $verifyStmt = $this->conn->prepare($verifyQuery);
+        $verifyStmt->bindParam(':request_id', $request_id, PDO::PARAM_INT);
+        $verifyStmt->execute();
+
+        if (!$verifyStmt->fetch(PDO::FETCH_ASSOC)) {
             return false;
         }
 
         $query = "UPDATE maintenance_requests
                   SET status = :status,
                       resolution_notes = :resolution_notes,
-                      resolved_at = CASE
-                          WHEN :status = 'resolved' THEN NOW()
-                          ELSE resolved_at
+                      completed_at = CASE
+                          WHEN :status = 'completed' THEN NOW()
+                          ELSE completed_at
                       END,
                       updated_at = NOW()
-                  WHERE id = :request_id
-                    AND assigned_staff = :staff_id";
+                  WHERE id = :request_id";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':status', $status);
         $stmt->bindParam(':resolution_notes', $resolution_notes);
         $stmt->bindParam(':request_id', $request_id, PDO::PARAM_INT);
-        $stmt->bindParam(':staff_id', $staff_id, PDO::PARAM_INT);
 
         return $stmt->execute();
     }
 
-    public function markRequestAsCompletedByTenant($request_id, $tenant_id){
+    public function markRequestAsResolvedByTenant($request_id, $tenant_id){
         $query = "UPDATE maintenance_requests
-                  SET status = 'completed',
-                      completed_at = NOW(),
+                  SET status = 'resolved',
+                      resolved_at = NOW(),
                       updated_at = NOW()
                   WHERE id = :request_id
                     AND tenant_id = :tenant_id
-                    AND status = 'resolved'";
+                    AND status <> 'completed'";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':request_id', $request_id, PDO::PARAM_INT);
