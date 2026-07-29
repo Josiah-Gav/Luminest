@@ -7,6 +7,15 @@ $user = new User($db->getConnection());
 $error = null;
 $res = null;
 
+if (session_status() === PHP_SESSION_NONE) {
+	session_start();
+}
+
+$isLoginRequest = $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']);
+$isRegisterRequest = $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register']);
+$currentScript = basename($_SERVER['SCRIPT_NAME'] ?? '');
+$isPublicAuthView = $currentScript === 'login.php' || $currentScript === 'register.php';
+
 function normalizePhoneNumber($phoneNumber) {
     $digits = preg_replace('/\D+/', '', (string)$phoneNumber);
 
@@ -30,7 +39,7 @@ function normalizePhoneNumber($phoneNumber) {
 }
 
 // LOGIN
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
+if ($isLoginRequest) {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     unset($_POST['login']); // Remove the 'login' key from $_POST to avoid confusion
@@ -85,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 }
 
 // REGISTER
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
+if ($isRegisterRequest) {
     $fullName = $_POST['full_name'] ?? '';
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -128,5 +137,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
         echo "Email and password are required.";
         exit;
     }
+
+    
+}
+
+if (!isset($_SESSION['user_id']) && !$isPublicAuthView) {
+    header('Location: ../../view/auth/login.php');
+    exit;
 }
 

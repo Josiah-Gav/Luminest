@@ -2,7 +2,7 @@
 
 class Database {
     private $host = "localhost";
-    private $port = "3306";
+    private $port = "3309";
     private $username = "root";
     private $password = "";
     private $database = "luminest";

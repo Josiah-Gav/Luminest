@@ -301,6 +301,7 @@
 	</style>
 </head>
 <body>
+
 	<nav class="navbar">
 		<div class="container nav-wrap">
 			<a href="welcome.php" class="brand">Lumi<span>nest</span></a>
