@@ -13,8 +13,11 @@ require_once '../layout/navbar.php';
 		<a href="maintenance_history.php" class="btn btn-outline-secondary">Back to History</a>
 	</div>
 
-	<?php if ($success !== ''): ?>
-		<div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+	<?php if (isset($_SESSION['flash_message'])): ?>
+		<div class="alert alert-<?php echo htmlspecialchars($_SESSION['flash_type'] ?? 'info'); ?>">
+			<?php echo htmlspecialchars($_SESSION['flash_message']); ?>
+		</div>
+		<?php unset($_SESSION['flash_message'], $_SESSION['flash_type']); ?>
 	<?php endif; ?>
 
 	<?php if ($error !== ''): ?>
@@ -43,11 +46,11 @@ require_once '../layout/navbar.php';
 			</div>
 		</div>
 
-		<?php if ($request['status'] !== 'completed' && $request['status'] !== 'resolved'): ?>
+		<?php if ($request['status'] === 'completed'): ?>
 			<div class="border rounded-3 p-4 bg-white">
 					<h3 class="h6 fw-bold mb-3">Confirm Resolution</h3>
 					<p class="text-secondary mb-3">If the maintenance work is finished to your satisfaction, mark this request as resolved.</p>
-					<form method="post" action="maintenance_details.php?id=<?php echo (int) $request['id']; ?>">
+					<form method="post" action="../../controllers/maintenance/tenant_maintenance_details_controller.php?id=<?php echo (int) $request['id']; ?>">
 						<button type="submit" name="mark_resolved" class="btn btn-success">Mark as Resolved</button>
 					</form>
 				</div>

@@ -36,16 +36,14 @@ if (!$request_id) {
     if (isset($_POST['mark_resolved'])) {
         $updated = $maintenance->markRequestAsResolvedByTenant($request_id, $tenant_id);
         if ($updated) {
-            $success = 'Maintenance request marked as resolved.';
-            if ($isAjaxRequest) {
-                sendJsonResponse(['success' => true, 'message' => $success]);
-            }
+            $_SESSION['flash_message'] = 'Maintenance request marked as resolved.';
+            $_SESSION['flash_type'] = 'success';
         } else {
-            $error = 'Unable to mark this request as resolved.';
-            if ($isAjaxRequest) {
-                sendJsonResponse(['success' => false, 'message' => $error], 400);
-            }
+            $_SESSION['flash_message'] = 'Unable to mark this request as resolved.';
+            $_SESSION['flash_type'] = 'danger';
         }
+        header('Location: ../../view/Tenant/maintenance_details.php?id=' . $request_id);
+        exit;
     }
 
     $request = $maintenance->getRequestByIdForTenant($request_id, $tenant_id);
