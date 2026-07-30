@@ -42,7 +42,12 @@ require_once '../layout/navbar.php';
 			</div>
 		</div>
 
-		<?php if ($request['status'] === 'completed'): ?>
+		<?php if (($request['status'] ?? '') === 'resolved'): ?>
+			<div class="border rounded-3 p-4 bg-white">
+				<h3 class="h6 fw-bold mb-3">Resolution Status</h3>
+				<p class="text-muted mb-0">This maintenance request is already resolved and cannot be changed.</p>
+			</div>
+		<?php elseif (($request['status'] ?? '') === 'completed'): ?>
 			<div class="border rounded-3 p-4 bg-white">
 					<h3 class="h6 fw-bold mb-3">Confirm Resolution</h3>
 					<p class="text-secondary mb-3">If the maintenance work is finished to your satisfaction, mark this request as resolved.</p>

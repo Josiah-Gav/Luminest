@@ -63,6 +63,7 @@ $staffList = $maintenanceController->getStaffList();
                         <option value="pending">Pending</option>
                         <option value="accepted">Accepted</option>
                         <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
                         <option value="resolved">Resolved</option>
                         <option value="on-hold">On Hold</option>
                         <option value="cancelled">Cancelled</option>

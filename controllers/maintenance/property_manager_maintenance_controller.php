@@ -381,7 +381,7 @@ class PropertyManagerMaintenanceController
         }
 
         if ($this->hasColumn($columns, 'status')) {
-            $sql .= " AND m.status <> 'completed' ";
+            $sql .= " AND m.status <> 'resolved' ";
         }
 
         if ($priority !== '' && $this->hasColumn($columns, 'priority')) {

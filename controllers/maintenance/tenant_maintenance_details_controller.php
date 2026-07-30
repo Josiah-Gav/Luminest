@@ -32,21 +32,24 @@ $success = '';
 if (!$request_id) {
     $error = 'Invalid request ID.';
 } else {
-    if (isset($_POST['mark_resolved'])) {
-        $updated = $maintenance->markRequestAsResolvedByTenant($request_id, $tenant_id);
-        if ($updated) {
-            $_SESSION['flash_message'] = 'Maintenance request marked as resolved.';
-            $_SESSION['flash_type'] = 'success';
-        } else {
-            $_SESSION['flash_message'] = 'Unable to mark this request as resolved.';
-            $_SESSION['flash_type'] = 'danger';
-        }
-        header('Location: ../../view/Tenant/maintenance_details.php?id=' . $request_id);
-        exit;
-    }
-
     $request = $maintenance->getRequestByIdForTenant($request_id, $tenant_id);
     if (!$request) {
         $error = 'Request not found or does not belong to you.';
+    } elseif (isset($_POST['mark_resolved'])) {
+        if (($request['status'] ?? '') === 'resolved') {
+            $_SESSION['flash_message'] = 'This maintenance request is already resolved and cannot be changed.';
+            $_SESSION['flash_type'] = 'warning';
+        } else {
+            $updated = $maintenance->markRequestAsResolvedByTenant($request_id, $tenant_id);
+            if ($updated) {
+                $_SESSION['flash_message'] = 'Maintenance request marked as resolved.';
+                $_SESSION['flash_type'] = 'success';
+            } else {
+                $_SESSION['flash_message'] = 'Unable to mark this request as resolved.';
+                $_SESSION['flash_type'] = 'danger';
+            }
+        }
+        header('Location: ../../view/Tenant/maintenance_details.php?id=' . $request_id);
+        exit;
     }
 }

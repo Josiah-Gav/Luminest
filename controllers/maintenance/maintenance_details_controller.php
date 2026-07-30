@@ -39,17 +39,20 @@ $success = '';
 if (!$request_id) {
     $error = 'Invalid request ID.';
 } else {
-    if (isset($_POST['update_request'])) {
-        $status = trim((string) ($_POST['status'] ?? ''));
-        $resolution_notes = trim((string) ($_POST['resolution_notes'] ?? ''));
-        $resolution_notes = $resolution_notes === '' ? null : $resolution_notes;
-
-        if ($status === 'resolved') {
-            $error = 'Maintenance staff can only mark requests as completed.';
+    $request = $maintenance->getRequestByIdForStaff($request_id, $staff_id);
+    if (!$request) {
+        $error = 'Request not found or not assigned to you.';
+    } elseif (isset($_POST['update_request'])) {
+        if (($request['status'] ?? '') === 'resolved') {
+            $error = 'This maintenance request is already resolved and its status cannot be changed.';
             if ($isAjaxRequest) {
                 sendJsonResponse(['success' => false, 'message' => $error], 400);
             }
         } else {
+            $status = trim((string) ($_POST['status'] ?? ''));
+            $resolution_notes = trim((string) ($_POST['resolution_notes'] ?? ''));
+            $resolution_notes = $resolution_notes === '' ? null : $resolution_notes;
+
             try {
                 $updated = $maintenance->updateRequestStatusByStaff($request_id, $staff_id, $status, $resolution_notes);
                 if ($updated) {
@@ -71,10 +74,5 @@ if (!$request_id) {
                 }
             }
         }
-    }
-
-    $request = $maintenance->getRequestByIdForStaff($request_id, $staff_id);
-    if (!$request) {
-        $error = 'Request not found or not assigned to you.';
     }
 }

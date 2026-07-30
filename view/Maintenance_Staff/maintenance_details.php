@@ -99,7 +99,7 @@ require_once '../layout/navbar.php';
                         <form method="post" action="maintenance_details.php?id=<?php echo (int) $request['id']; ?>">
                             <div class="mb-3">
                                 <label for="status" class="form-label">Status</label>
-                                <select id="status" name="status" class="form-select" required>
+                                <select id="status" name="status" class="form-select" required <?php echo (($request['status'] ?? '') === 'resolved') ? 'disabled' : ''; ?>>
                                     <?php
                                     $statuses = ['in-progress', 'completed'];
                                     foreach ($statuses as $status_option):
@@ -113,10 +113,14 @@ require_once '../layout/navbar.php';
 
                             <div class="mb-3">
                                 <label for="resolution_notes" class="form-label">Resolution Notes</label>
-                                <textarea id="resolution_notes" name="resolution_notes" class="form-control" rows="4"><?php echo htmlspecialchars($request['resolution_notes'] ?? ''); ?></textarea>
+                                <textarea id="resolution_notes" name="resolution_notes" class="form-control" rows="4" <?php echo (($request['status'] ?? '') === 'resolved') ? 'disabled' : ''; ?>><?php echo htmlspecialchars($request['resolution_notes'] ?? ''); ?></textarea>
                             </div>
 
-                            <button type="submit" name="update_request" class="btn btn-primary">Save Changes</button>
+                            <?php if (($request['status'] ?? '') === 'resolved'): ?>
+                                <div class="alert alert-info mb-3">This maintenance request is already resolved and its status cannot be changed.</div>
+                            <?php else: ?>
+                                <button type="submit" name="update_request" class="btn btn-primary">Save Changes</button>
+                            <?php endif; ?>
                             <a href="maintenance_requests.php" class="btn btn-outline-secondary">Back to Requests</a>
                         </form>
                     </div>
