@@ -1,5 +1,5 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/database/db.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/controllers/BaseController.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/models/Maintenance.php';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -11,7 +11,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Tenant') {
     exit;
 }
 
-$db = new AppDatabase();
 $maintenance = new Maintenance();
 $tenant_id = (int) ($_SESSION['user_id'] ?? 0);
 $requests = $maintenance->getRequestsByTenant($tenant_id);

@@ -1,5 +1,5 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/database/db.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/controllers/BaseController.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/models/User.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/models/House.php';
 
@@ -14,7 +14,6 @@ $isAjaxRequest = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERV
 	|| !empty($_POST['ajax'])
 	|| !empty($_GET['ajax']);
 
-$db = new AppDatabase();
 $user = new User();
 $house = new House();
 

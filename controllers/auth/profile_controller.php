@@ -1,8 +1,7 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/database/db.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/controllers/BaseController.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/models/User.php';
 
-$db = new AppDatabase();
 $user = new User();
 $error = null;
 $res = null;
