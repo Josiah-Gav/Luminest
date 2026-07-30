@@ -2,7 +2,7 @@
 
 class Database {
     protected $host = "localhost";
-    protected $port = "3306";
+    protected $port = "3309";
     protected $username = "root";
     protected $password = "";
     protected $database = "luminest";

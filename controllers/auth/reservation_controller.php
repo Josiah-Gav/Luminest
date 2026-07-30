@@ -40,6 +40,92 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 	exit;
 }
 
+// PAY RESERVATION
+
+if (isset($_POST['pay_reservation'])) {
+    $reservationId = isset($_POST['reservation_id']) ? (int)$_POST['reservation_id'] : 0;
+
+    if ($reservationId <= 0) {
+        if ($isAjaxRequest) {
+            sendJsonResponse(['success' => false, 'message' => 'Invalid reservation id.'], 400);
+        }
+        header('Location: ../../view/Prospect/history.php?error=invalid_cancel');
+        exit;
+    }
+
+    $reservationStmt = $conn->prepare(
+        'SELECT reservation_id, house_type, block, lot, status
+         FROM house_reservations
+         WHERE reservation_id = :reservation_id AND user_id = :user_id
+         LIMIT 1'
+    );
+    $reservationStmt->execute([
+        ':reservation_id' => $reservationId,
+        ':user_id' => (int)$_SESSION['user_id'],
+    ]);
+    $reservation = $reservationStmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$reservation || ($reservation['status'] ?? '') !== 'accepted') {
+        if ($isAjaxRequest) {
+            sendJsonResponse(['success' => false, 'message' => 'This reservation is not eligible for payment.'], 400);
+        }
+        header('Location: ../../view/Prospect/history.php?error=payment_not_allowed');
+        exit;
+    }
+
+    try {
+        $conn->beginTransaction();
+
+        $payStmt = $conn->prepare(
+            'UPDATE house_reservations
+             SET status = :new_status, updated_at = NOW()
+             WHERE reservation_id = :reservation_id AND user_id = :user_id AND status = :current_status'
+        );
+        $payStmt->execute([
+            ':new_status' => 'paid',
+            ':reservation_id' => (int)$reservation['reservation_id'],
+            ':user_id' => (int)$_SESSION['user_id'],
+            ':current_status' => 'accepted',
+        ]);
+
+        if ($payStmt->rowCount() !== 1) {
+            throw new RuntimeException('Payment status update failed.');
+        }
+
+        // Mark the house as sold and assign owner
+        $houseRow = $house->getHouseByTypeBlockLot($reservation['house_type'], (int)$reservation['block'], (int)$reservation['lot']);
+        if ($houseRow) {
+            $updateHouseStmt = $conn->prepare(
+                'UPDATE house
+                 SET status = :status, owner_id = :owner_id, date_of_purchase = NOW(), updated_at = NOW()
+                 WHERE house_id = :house_id'
+            );
+            $updateHouseStmt->execute([
+                ':status' => 'sold',
+                ':owner_id' => (int)$_SESSION['user_id'],
+                ':house_id' => (int)$houseRow['house_id'],
+            ]);
+        }
+
+        $conn->commit();
+        if ($isAjaxRequest) {
+            sendJsonResponse(['success' => true, 'message' => 'Payment successful! The house is now yours.', 'redirect' => '/luminest/view/Prospect/history.php?paid=1']);
+        }
+        header('Location: ../../view/Prospect/history.php?paid=1');
+        exit;
+    } catch (Throwable $e) {
+        if ($conn->inTransaction()) {
+            $conn->rollBack();
+        }
+
+        if ($isAjaxRequest) {
+            sendJsonResponse(['success' => false, 'message' => 'Unable to process payment right now.'], 400);
+        }
+        header('Location: ../../view/Prospect/history.php?error=payment_failed');
+        exit;
+    }
+}
+
 // CANCEL RESERVATION
 
 if (isset($_POST['cancel_reservation'])) {

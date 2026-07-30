@@ -20,10 +20,6 @@ require_once '../layout/navbar.php';
 		<?php unset($_SESSION['flash_message'], $_SESSION['flash_type']); ?>
 	<?php endif; ?>
 
-	<?php if ($error !== ''): ?>
-		<div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
-	<?php endif; ?>
-
 	<?php if ($request): ?>
 		<div class="border rounded-3 p-4 bg-white mb-4">
 				<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">

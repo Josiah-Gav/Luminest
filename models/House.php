@@ -16,6 +16,7 @@ class House extends Database
             'bathrooms' => '1',
             'carports' => '0',
             'badge' => 'Starter home',
+            'price' => '1,500,000',
         ],
         'angelique_duplex' => [
             'slug' => 'angelique_duplex',
@@ -28,6 +29,7 @@ class House extends Database
             'bathrooms' => '1',
             'carports' => '1',
             'badge' => 'Family ready',
+            'price' => '2,500,000',
         ],
         'armina_single' => [
             'slug' => 'armina_single',
@@ -40,6 +42,7 @@ class House extends Database
             'bathrooms' => '1',
             'carports' => '1',
             'badge' => 'Room to grow',
+            'price' => '3,500,000',
         ],
         'armina_duplex' => [
             'slug' => 'armina_duplex',
@@ -52,6 +55,7 @@ class House extends Database
             'bathrooms' => '1',
             'carports' => '1',
             'badge' => 'Spacious choice',
+            'price' => '4,000,000',
         ],
     ];
 
