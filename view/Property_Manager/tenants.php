@@ -259,21 +259,25 @@ try {
             let debounceTimer;
             searchInput.addEventListener('input', function () {
                 clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
+                debounceTimer = setTimeout(async () => {
                     const query = this.value.trim();
-                    $.ajax({
-                        url: `tenants.php?ajax_search=1&q=${encodeURIComponent(query)}`,
-                        type: 'GET',
-                        dataType: 'json',
-                        success: function (payload) {
-                            if (payload.success) {
-                                renderTable(payload.data || []);
-                            }
-                        },
-                        error: function () {
-                            console.error('Tenant search error.');
-                        }
+                    const params = new URLSearchParams({
+                        ajax_search: '1',
+                        q: query
                     });
+
+                    try {
+                        const response = await fetch(`tenants.php?${params.toString()}`);
+                        const payload = await response.json();
+
+                        if (payload.success) {
+                            renderTable(payload.data || []);
+                        } else {
+                            console.error('Tenant search error:', payload.message || 'Unknown error');
+                        }
+                    } catch (error) {
+                        console.error('Tenant search error:', error);
+                    }
                 }, 300);
             });
 
