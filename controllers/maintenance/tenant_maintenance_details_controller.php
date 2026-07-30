@@ -1,5 +1,5 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/database/db.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/controllers/BaseController.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/luminest/models/Maintenance.php';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -22,7 +22,6 @@ $isAjaxRequest = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERV
     || !empty($_POST['ajax'])
     || !empty($_GET['ajax']);
 
-$db = new AppDatabase();
 $maintenance = new Maintenance();
 $tenant_id = (int) ($_SESSION['user_id'] ?? 0);
 $request_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
