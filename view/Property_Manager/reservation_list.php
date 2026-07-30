@@ -52,8 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 ]);
             }
 
-            // 3. If status is ACCEPTED or PAID, update user's role to Tenant.
-            if (in_array($new_status, ['accepted', 'paid'], true)) {
+            // 3. Only promote a prospect to Tenant after payment is completed.
+            if ($new_status === 'paid') {
                 $userRoleStmt = $pdo->prepare(" 
                     UPDATE users
                     SET role = 'Tenant'
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 header('Content-Type: application/json');
                 echo json_encode([
                     'success' => true, 
-                    'message' => "Reservation #{$reservation_id} updated to " . strtoupper($new_status) . "." . (in_array($new_status, ['accepted', 'paid'], true) ? " User updated to Tenant." : ""),
+                    'message' => "Reservation #{$reservation_id} updated to " . strtoupper($new_status) . "." . ($new_status === 'paid' ? " User updated to Tenant." : ""),
                     'new_status' => strtoupper($new_status)
                 ]);
                 exit();

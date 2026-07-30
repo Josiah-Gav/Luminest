@@ -29,7 +29,8 @@ if (!isset($_SESSION['user_id'])) {
 	exit;
 }
 
-$conn = $db->getConnection();
+$baseController = new BaseController();
+$conn = $baseController->getDbConnection();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 	if ($isAjaxRequest) {
@@ -105,6 +106,15 @@ if (isset($_POST['pay_reservation'])) {
                 ':house_id' => (int)$houseRow['house_id'],
             ]);
         }
+
+        $roleUpdateStmt = $conn->prepare(
+            "UPDATE users
+             SET role = 'Tenant'
+             WHERE user_id = :user_id
+               AND LOWER(role) = 'prospect'"
+        );
+        $roleUpdateStmt->execute([':user_id' => (int)$_SESSION['user_id']]);
+        $_SESSION['role'] = 'Tenant';
 
         $conn->commit();
         if ($isAjaxRequest) {

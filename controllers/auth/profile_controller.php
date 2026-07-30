@@ -15,7 +15,23 @@ if (!isset($_SESSION['user_id'])) {
 	exit;
 }
 
-$conn = $db->getConnection();
+function getProfileRedirectPath(): string {
+    $role = strtolower(trim((string) ($_SESSION['role'] ?? '')));
+
+    if ($role === 'tenant') {
+        return '../../view/Tenant/profile.php';
+    }
+
+    if ($role === 'maintenance_staff') {
+        return '../../view/Maintenance_Staff/profile.php';
+    }
+
+    if ($role === 'property_manager') {
+        return '../../view/Property_Manager/profile.php';
+    }
+
+    return '../../view/Admin/profile.php';
+}
 
 if(isset($_POST['update_profile'])) {
     $user_id = $_SESSION['user_id'];
@@ -31,10 +47,12 @@ if(isset($_POST['update_profile'])) {
         $_SESSION['email'] = $email;
         $_SESSION['phone_number'] = $phone_number;
 
-        header("Location: ../../view/Admin/profile.php?success=profile_updated");
+        $redirectPath = getProfileRedirectPath();
+        header("Location: {$redirectPath}?success=profile_updated");
         exit;
     } else {
-        header("Location: ../../view/Admin/profile.php?error=update_failed");
+        $redirectPath = getProfileRedirectPath();
+        header("Location: {$redirectPath}?error=update_failed");
         exit;
     }
 }
@@ -47,7 +65,8 @@ if(isset($_POST['change_password'])) {
     // Verify current password
     $userData = $user->getById($user_id);
     if (!$userData || !password_verify($current_password, $userData['password_hash'])) {
-        header("Location: ../../view/Admin/profile.php?error=invalid_current_password");
+        $redirectPath = getProfileRedirectPath();
+        header("Location: {$redirectPath}?error=invalid_current_password");
         exit;
     }
 
@@ -55,10 +74,12 @@ if(isset($_POST['change_password'])) {
     $res = $user->updatePassword($user_id, $new_password);
 
     if ($res) {
-        header("Location: ../../view/Admin/profile.php?success=password_changed");
+        $redirectPath = getProfileRedirectPath();
+        header("Location: {$redirectPath}?success=password_changed");
         exit;
     } else {
-        header("Location: ../../view/Admin/profile.php?error=password_change_failed");
+        $redirectPath = getProfileRedirectPath();
+        header("Location: {$redirectPath}?error=password_change_failed");
         exit;
     }
 }
