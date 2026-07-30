@@ -92,7 +92,7 @@ if (isset($_POST['pay_reservation'])) {
             throw new RuntimeException('Payment status update failed.');
         }
 
-        // Mark the house as sold and assign owner
+        // Mark the house as sold and assign ownership to the buyer
         $houseRow = $house->getHouseByTypeBlockLot($reservation['house_type'], (int)$reservation['block'], (int)$reservation['lot']);
         if ($houseRow) {
             $updateHouseStmt = $conn->prepare(
@@ -105,6 +105,16 @@ if (isset($_POST['pay_reservation'])) {
                 ':owner_id' => (int)$_SESSION['user_id'],
                 ':house_id' => (int)$houseRow['house_id'],
             ]);
+
+            $ownedHouseUpdateStmt = $conn->prepare(
+                'UPDATE users
+                 SET owned_house = :owned_house
+                 WHERE user_id = :user_id'
+            );
+            $ownedHouseUpdateStmt->execute([
+                ':owned_house' => (int)$houseRow['house_id'],
+                ':user_id' => (int)$_SESSION['user_id'],
+            ]);
         }
 
         $roleUpdateStmt = $conn->prepare(
@@ -115,6 +125,7 @@ if (isset($_POST['pay_reservation'])) {
         );
         $roleUpdateStmt->execute([':user_id' => (int)$_SESSION['user_id']]);
         $_SESSION['role'] = 'Tenant';
+        $_SESSION['owned_house'] = isset($houseRow['house_id']) ? (string)(int)$houseRow['house_id'] : ($_SESSION['owned_house'] ?? '');
 
         $conn->commit();
         if ($isAjaxRequest) {
