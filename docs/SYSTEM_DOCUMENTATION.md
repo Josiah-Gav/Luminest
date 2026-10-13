@@ -128,13 +128,13 @@ Rules: all four register fields required; email and (normalized) phone must be u
 ```mermaid
 stateDiagram-v2
     direction LR
-    [*] --> pending: Prospect reserves\n(house: available→reserved)
-    pending --> cancelled: Prospect cancels\n(house: reserved→available)
+    [*] --> pending: Prospect reserves<br/>(house: available→reserved)
+    pending --> cancelled: Prospect cancels<br/>(house: reserved→available)
     pending --> accepted: PM
-    pending --> rejected: PM\n(house stays reserved!)
-    accepted --> paid: Prospect pays\n(house→sold, owner set,\nusers.owned_house set,\nrole→Tenant)
-    accepted --> paid: PM sets paid\n(house→sold, owner set,\nrole→Tenant, owned_house NOT set)
-    note right of accepted: PM can set any of\npending/accepted/paid/rejected\nfrom any state
+    pending --> rejected: PM<br/>(house stays reserved!)
+    accepted --> paid: Prospect pays<br/>(house→sold, owner set,<br/>users.owned_house set,<br/>role→Tenant)
+    accepted --> paid: PM sets paid<br/>(house→sold, owner set,<br/>role→Tenant, owned_house NOT set)
+    note right of accepted: PM can set any of<br/>pending/accepted/paid/rejected<br/>from any state
 ```
 
 Step detail:
@@ -159,15 +159,14 @@ The `completed` reservation status exists in the enum but nothing sets it except
 
 ```mermaid
 stateDiagram-v2
-    direction LR
-    [*] --> pending: Tenant submits\n(house_id = users.owned_house)
+    [*] --> pending: Tenant submits<br/>(house_id = users.owned_house)
     pending --> accepted: PM assigns staff
     accepted --> pending: PM unassigns staff
     accepted --> in_progress: Staff
     pending --> in_progress: Staff (no guard)
-    in_progress --> completed: Staff\n(completed_at = NOW)
+    in_progress --> completed: Staff<br/>(completed_at = NOW)
     completed --> in_progress: Staff (allowed)
-    completed --> resolved: Tenant confirms\n(resolved_at = NOW)
+    completed --> resolved: Tenant confirms<br/>(resolved_at = NOW)
     resolved --> [*]: locked
 ```
 
@@ -326,6 +325,7 @@ Unknown slugs silently fall back to `aimee`.
 **`Database` / `AppDatabase`** (`database/db.php`) — opens a PDO connection (exceptions on, assoc fetch). Including the file also creates globals `$db`, `$pdo`, `$conn`. Every model extends it, so every `new Model()` opens a new connection.
 
 **`User`** (`models/User.php`)
+
 | Method | Purpose |
 |---|---|
 | `create()` | Insert from public props (`full_name`, `email`, `password`, `phone_number`); role defaults to Prospect |
@@ -339,6 +339,7 @@ Unknown slugs silently fall back to `aimee`.
 **`Admin`** (`models/Admin.php`) — `getAllUsers()`, `getUserById($id)`, `createUser($name, $email, $password, $role, $expertise, $phone)`, `updateUser($id, $name, $email, $role, $expertise, $phone)` (blank phone keeps existing), `deleteUser($id)`, `normalizePhoneNumber()`.
 
 **`House`** (`models/House.php`)
+
 | Method | Purpose |
 |---|---|
 | `all()`, `getBySlug($slug)`, `exists($slug)`, `getByDbType($type)` | Catalog lookups |
@@ -349,6 +350,7 @@ Unknown slugs silently fall back to `aimee`.
 | `markAsAvailableByUnit($type, $block, $lot)` | `reserved → available`, clears owner/purchase date |
 
 **`Maintenance`** (`models/Maintenance.php`)
+
 | Method | Purpose |
 |---|---|
 | `createRequest($tenantId, $title, $category, $description, $priority)` | Validates category, links `owned_house`, inserts `pending` |
