@@ -457,6 +457,8 @@ Opinionated recommendations. The goal is a faithful port of the *business rules*
 
 ### 8.1 Stack
 
+> **Superseded:** the course requires Laravel API + React. See [`LARAVEL_REACT_PLAN.md`](LARAVEL_REACT_PLAN.md) for the stack, routes and frontend. The schema, enums, policies, services and validation below still apply.
+
 - Laravel 11/12, PHP 8.2+, MySQL 8.
 - Auth scaffolding: **Laravel Breeze (Blade)** — closest to the current server-rendered Bootstrap pages; swap Tailwind for Bootstrap or keep Tailwind. Gives login, register, profile, password change, CSRF, session regeneration for free.
 - Interactivity (live search, 10 s polling): **Livewire 3** fits the PM tables well; plain Blade + `fetch` also works. Don't go SPA unless there is a reason.
@@ -605,6 +607,8 @@ Wrap each multi-table write in `DB::transaction()`. Fire events (`ReservationAcc
 | `Admin\StoreUserRequest` / `UpdateUserRequest` | role enum; expertise required_if role=staff, else null; email/phone unique ignoring self; cannot demote/delete self |
 
 ### 8.8 Controllers & routes (sketch)
+
+> Superseded by the API contract in `LARAVEL_REACT_PLAN.md` §5.
 
 ```php
 Route::view('/', 'welcome');
